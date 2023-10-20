@@ -9,7 +9,7 @@
 ```shell
 git clone git@github.com:gaoxianglong/encrypt-dog-new.git
 mvn package
-alias dog = 'java -Xms1g -Xmx1g -Xmn128m -jar dog-1.6.0.jar'
+alias dog = 'java -Xms1g -Xmx1g -Xmn128m -jar dog-2.0.0.jar'
 ```
 or
 ```shell
