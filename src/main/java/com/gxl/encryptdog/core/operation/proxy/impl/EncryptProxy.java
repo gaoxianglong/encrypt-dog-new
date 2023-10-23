@@ -79,6 +79,7 @@ public class EncryptProxy implements Proxy {
 
     /**
      * 执行加/解密操作
+     *
      * @param context
      */
     @Override
@@ -112,6 +113,7 @@ public class EncryptProxy implements Proxy {
 
     /**
      * 构建FinishedEvent
+     *
      * @param begin
      * @return
      */
@@ -128,6 +130,7 @@ public class EncryptProxy implements Proxy {
 
     /**
      * Dashboard数据初始化
+     *
      * @param voList
      * @param isEncrypt
      */
@@ -152,6 +155,7 @@ public class EncryptProxy implements Proxy {
 
     /**
      * 从责任链中获取对应的加解密器
+     *
      * @param context
      * @return
      * @throws OperationException

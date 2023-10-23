@@ -19,8 +19,6 @@
 package com.gxl.encryptdog.core.shell.view;
 
 import com.gxl.encryptdog.base.error.ViewRenderException;
-import com.gxl.encryptdog.core.operation.proxy.params.DashboardViewErrorDetail;
-import com.gxl.encryptdog.core.operation.proxy.params.DashboardViewResult;
 import com.gxl.encryptdog.core.operation.proxy.params.DashboardViewState;
 import com.gxl.encryptdog.core.operation.proxy.params.ResultContext;
 import com.gxl.encryptdog.utils.Utils;
@@ -163,41 +161,6 @@ public class ViewRenderUtil {
         } catch (Throwable e) {
             throw new ViewRenderException("Template rendering failed", e);
         }
-    }
-
-    /**
-     * 渲染错误详情
-     * @param width
-     * @param height
-     * @param context
-     * @return
-     */
-    public static String drawTaskErrorDetail(int width, int height, ResultContext context) {
-        var table = new TableElement(1, 2, 5).overflow(Overflow.HIDDEN).rightCellPadding(1);
-
-        // 添加header信息
-        table.add(new RowElement().style(Decoration.bold.fg(Color.black).bg(Color.white)).add(
-            // 任务编号
-            "NO",
-            // 源文件全限定名
-            "SOURCE_FILE",
-            // 错误详情
-            "ERROR_DETAIL"));
-
-        // 任务计数器
-        var count = 0;
-        List<DashboardViewErrorDetail> entrys = new ArrayList<>(context.getDashboardViewErrorDetails().values());
-        for (var entry : entrys) {
-            var task = entry;
-            // height - 1的目的是因为header要占用1行
-            if (++count > height - 1) {
-                break;
-            }
-
-            // 数据填充
-            table.row(new LabelElement(count), new LabelElement(task.getTaskName()), new LabelElement(task.getErrorDetail()));
-        }
-        return RenderUtil.render(table, width, height);
     }
 
     /**

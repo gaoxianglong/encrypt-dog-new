@@ -36,21 +36,17 @@ public class ResultContext {
     /**
      * 执行状态数据
      */
-    private Map<String, DashboardViewState>       dashboardViewStates       = new ConcurrentHashMap<>();
-    /**
-     * 错误详情数据
-     */
-    private Map<String, DashboardViewErrorDetail> dashboardViewErrorDetails = new ConcurrentHashMap<>();
+    private Map<String, DashboardViewState> dashboardViewStates = new ConcurrentHashMap<>();
     /**
      * 执行结果数据
      */
-    private DashboardViewResult                   dashboardViewResult       = new DashboardViewResult();
+    private DashboardViewResult             dashboardViewResult = new DashboardViewResult();
     /**
      * 操作失败的文件个数
      */
-    private AtomicInteger                         failedFileNumber          = new AtomicInteger();
+    private AtomicInteger                   failedFileNumber    = new AtomicInteger();
     /**
      * 操作成功的文件个数
      */
-    private AtomicInteger                         successFileNumber         = new AtomicInteger();
+    private AtomicInteger                   successFileNumber   = new AtomicInteger();
 }
