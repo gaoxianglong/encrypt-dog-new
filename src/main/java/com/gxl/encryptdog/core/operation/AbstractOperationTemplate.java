@@ -28,6 +28,7 @@ import com.gxl.encryptdog.core.event.observer.ObServerContext;
 import com.gxl.encryptdog.core.operation.proxy.params.ResultContext;
 import com.gxl.encryptdog.utils.Utils;
 import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 
 import java.io.*;
 
@@ -38,6 +39,7 @@ import java.io.*;
  * @version Id: 1.0.0
  * @since 2023/9/23 14:07
  */
+@Slf4j
 @Getter
 public abstract class AbstractOperationTemplate implements Operation {
     /**
@@ -47,7 +49,7 @@ public abstract class AbstractOperationTemplate implements Operation {
     /**
      * 事件广播器
      */
-    private ObServerContext     obServer;
+    private ObServerContext obServer;
 
     public AbstractOperationTemplate(ObServerContext obServer) {
         this.obServer = obServer;
@@ -56,6 +58,7 @@ public abstract class AbstractOperationTemplate implements Operation {
 
     /**
      * 抽象模版方法
+     *
      * @param operationVO
      * @param context
      * @return
@@ -86,6 +89,8 @@ public abstract class AbstractOperationTemplate implements Operation {
             // 成功处理
             onSuccess(encryptContext);
         } catch (Throwable e) {
+            // 加/解密操作的失败详情输出到日志目录
+            log.error(String.format("File %s encryption or decryption operation failed", sourceFilePath), e);
             try {
                 // 失败处理
                 onFailure(encryptContext);
@@ -97,6 +102,7 @@ public abstract class AbstractOperationTemplate implements Operation {
 
     /**
      * 成功后处理
+     *
      * @param encryptContext
      * @throws ResourceException
      * @throws ListenerException
@@ -115,6 +121,7 @@ public abstract class AbstractOperationTemplate implements Operation {
 
     /**
      * 失败后处理
+     *
      * @param encryptContext
      * @throws OperationException
      */
@@ -156,7 +163,8 @@ public abstract class AbstractOperationTemplate implements Operation {
 
     /**
      * 计算预计耗时
-     * @param timeConsuming 单数据块的执行耗时
+     *
+     * @param timeConsuming  单数据块的执行耗时
      * @param encryptContext
      * @return
      */
@@ -168,6 +176,7 @@ public abstract class AbstractOperationTemplate implements Operation {
 
     /**
      * 构建DecryptContext
+     *
      * @param context
      * @param sourceFileCapacity
      * @param defaultCapacity
@@ -179,22 +188,23 @@ public abstract class AbstractOperationTemplate implements Operation {
     private EncryptContext buildDecryptContext(ResultContext context, long sourceFileCapacity, int defaultCapacity, OperationVO operationVO, BufferedInputStream in,
                                                BufferedOutputStream out) {
         return new EncryptContext()
-            // 设置执行结果数据上下文
-            .setResultContext(context)
-            // 设置每次加/解密读取的文件内容大小
-            .setDefaultCapacity(defaultCapacity)
-            // 设置加/解密领域模型
-            .setOperationVO(operationVO)
-            // 设置源文件容量
-            .setSourceFileCapacity(sourceFileCapacity)
-            // 设置读文件句柄
-            .setInputStream(in)
-            // 设置写文件句柄
-            .setOutputStream(out);
+                // 设置执行结果数据上下文
+                .setResultContext(context)
+                // 设置每次加/解密读取的文件内容大小
+                .setDefaultCapacity(defaultCapacity)
+                // 设置加/解密领域模型
+                .setOperationVO(operationVO)
+                // 设置源文件容量
+                .setSourceFileCapacity(sourceFileCapacity)
+                // 设置读文件句柄
+                .setInputStream(in)
+                // 设置写文件句柄
+                .setOutputStream(out);
     }
 
     /**
      * 删除源文件
+     *
      * @param operationVO
      */
     private void deleteSourceFile(OperationVO operationVO) {
@@ -207,6 +217,7 @@ public abstract class AbstractOperationTemplate implements Operation {
 
     /**
      * 删除目标文件
+     *
      * @param operationVO
      */
     private void deleteTargetFile(OperationVO operationVO) {
@@ -216,6 +227,7 @@ public abstract class AbstractOperationTemplate implements Operation {
 
     /**
      * 最高安全性的本地化处理
+     *
      * @param encryptContext
      * @throws EncryptException
      * @throws IOException
