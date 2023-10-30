@@ -32,7 +32,7 @@ Usage: encrypt-dog [-dehoV] -k [-k]... [-a=<encryptAlgorithm>] [-t=<storage
                    path>] -s=<source file>[,<source file>...]... [-s=<source
                    file>[,<source file>...]...]...
   -a, --encrypt-algorithm=<encryptAlgorithm>
-                     Set the algorithm type to use 3DES encryption algorithm by
+                     Set the algorithm type to use DESede encryption algorithm by
                        default.
   -d, --delete       The source file is not deleted after the default operation.
   -e, --encrypt      The default is decryption mode.
