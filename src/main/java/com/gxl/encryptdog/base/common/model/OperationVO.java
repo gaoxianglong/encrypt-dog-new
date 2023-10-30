@@ -96,6 +96,10 @@ public class OperationVO implements Serializable {
             // 如果用户未指定,则使用源文件目录
             targetFileDir = sourceFileDir;
         }
+
+        // 创建目标文件目录,存在则不创建
+        Utils.createTargetDir(targetFileDir);
+
         // 加密操作时源文件后缀拼接.dog
         if (request.isEncrypt()) {
             this.targetFilePath = String.format("%s%s%s%s", targetFileDir, Constants.FILE_SEPARATOR, sourceFileName, Constants.DEFAULT_SUFFIX);

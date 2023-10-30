@@ -132,7 +132,7 @@ public abstract class AbstractOperationTemplate implements Operation {
         // 流转任务状态为FINISHED
         getProcessState().setState(encryptContext, EncryptStateEnum.FINISHED);
 
-        // 无论加解密是否成功,目标文件已经提前创建，如果操作失败则删除目标文件
+        // 由于目标文件已经提前创建，如果操作失败则删除目标文件
         deleteTargetFile(encryptContext.getOperationVO());
     }
 

@@ -83,9 +83,9 @@ public class ConsoleRequest implements Serializable {
     private boolean           isOnlyLocal;
 
     /**
-     * 加/解密算法类型,缺省为3DES
+     * 加/解密算法类型,缺省为DESede
      */
-    @CommandLine.Option(names = { "-a", "--encrypt-algorithm" }, description = "Set the algorithm type to use 3DES encryption algorithm by default.")
+    @CommandLine.Option(names = { "-a", "--encrypt-algorithm" }, description = "Set the algorithm type to use DESede encryption algorithm by default.")
     private String            encryptAlgorithm = EncryptTypeEnum.TRIPLE_DES.getAlgorithmType();
 
     /**

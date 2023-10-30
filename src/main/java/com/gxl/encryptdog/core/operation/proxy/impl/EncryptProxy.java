@@ -36,6 +36,7 @@ import com.gxl.encryptdog.core.shell.view.View;
 import com.gxl.encryptdog.core.shell.view.impl.DashboardView;
 import com.gxl.encryptdog.utils.Utils;
 import com.gxl.encryptdog.utils.player.impl.WavPlayer;
+import lombok.extern.slf4j.Slf4j;
 import org.reflections.Reflections;
 
 import java.lang.reflect.Modifier;
@@ -50,6 +51,7 @@ import java.util.concurrent.*;
  * @version Id: 1.0.0
  * @since 2023/10/3 11:34
  */
+@Slf4j
 public class EncryptProxy implements Proxy {
     /**
      * 加解密器责任链
@@ -107,7 +109,8 @@ public class EncryptProxy implements Proxy {
             // 停止视图渲染
             ViewSchedule.stop();
         } catch (Throwable e) {
-            throw new BaseException(String.format("File %s operation execution exception", Utils.getOperateType(context.getConsoleRequest().isEncrypt())), e);
+            log.error(e.getMessage(), e);
+            throw new BaseException(e.getMessage(), e);
         }
     }
 
@@ -168,7 +171,7 @@ public class EncryptProxy implements Proxy {
                 return operation;
             }
         }
-        throw new OperationException("Unsupported encryption algorithm type, unable to load corresponding processor");
+        throw new OperationException("Unsupported encryption or decryption algorithm type");
     }
 
     /**

@@ -251,16 +251,24 @@ public class Utils {
      * @throws IOException
      */
     public static void createTargetFile(String filePath) throws IOException {
-        var fs = parseFileStructure(filePath);
-        var targetFileDir = new File(fs.getFileDir());
-        if (!targetFileDir.exists()) {
-            // 创建目标文件夹
-            targetFileDir.mkdirs();
-        }
+        // 创建目标文件夹
+        createTargetDir(parseFileStructure(filePath).getFileDir());
         var targetFile = new File(filePath);
         if (!targetFile.exists()) {
             // 创建目标文件
             targetFile.createNewFile();
+        }
+    }
+
+    /**
+     * 创建目标文件夹
+     * @param targetDir
+     */
+    public static void createTargetDir(String targetDir) {
+        var targetFileDir = new File(targetDir);
+        if (!targetFileDir.exists()) {
+            // 创建目标文件夹
+            targetFileDir.mkdirs();
         }
     }
 
