@@ -13,7 +13,7 @@ alias dog = 'java -Xms1g -Xmx1g -Xmn384m -jar dog-2.0.1.jar'
 ```
 or
 ```shell
-$ wget https://github.com/gaoxianglong/encrypt-dog-new/releases/download/2.0.1-RELEASE/dog-2.0.1.jar
+$ wget https://github.com/gaoxianglong/encrypt-dog-new/releases/download/v2.0.1/dog-2.0.1.jar
 alias dog = 'java -Xms512m -Xmx512m -Xmn384m -jar dog-2.0.1.jar'
 ```
 ### use
