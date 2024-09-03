@@ -83,10 +83,11 @@ public class ConsoleRequest implements Serializable {
     private boolean           isOnlyLocal;
 
     /**
-     * 加/解密算法类型,缺省为DESede
+     * 加/解密算法类型,缺省为AES
      */
-    @CommandLine.Option(names = { "-a", "--encrypt-algorithm" }, description = "Set the algorithm type to use DESede encryption algorithm by default.")
-    private String            encryptAlgorithm = EncryptTypeEnum.TRIPLE_DES.getAlgorithmType();
+    @CommandLine.Option(names = { "-a",
+                                  "--encrypt-algorithm" }, description = "The default encryption algorithm is AES. Currently supported encryption algorithms are AES, DESede (3DES), and XOR.")
+    private String            encryptAlgorithm = EncryptTypeEnum.AES.getAlgorithmType();
 
     /**
      * 获取ConsoleRequest实例

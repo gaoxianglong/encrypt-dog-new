@@ -19,7 +19,7 @@
 package com.gxl.encryptdog.core.operation.proxy.impl;
 
 import com.gxl.encryptdog.base.common.model.OperationVO;
-import com.gxl.encryptdog.core.operation.Operation;
+import com.gxl.encryptdog.core.operation.OperationStrategy;
 import com.gxl.encryptdog.core.operation.proxy.params.ResultContext;
 
 import java.util.concurrent.CountDownLatch;
@@ -35,7 +35,7 @@ public class EncryptExecuter implements Runnable {
     /**
      * 加/解密器
      */
-    private Operation      operation;
+    private OperationStrategy operation;
     /**
      * 加解密操作领域模型
      */
@@ -49,7 +49,7 @@ public class EncryptExecuter implements Runnable {
      */
     private CountDownLatch latch;
 
-    public EncryptExecuter(Operation operation, OperationVO operationVO, ResultContext context, CountDownLatch latch) {
+    public EncryptExecuter(OperationStrategy operation, OperationVO operationVO, ResultContext context, CountDownLatch latch) {
         this.operation = operation;
         this.operationVO = operationVO;
         this.context = context;

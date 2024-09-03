@@ -1,6 +1,6 @@
 <div align=center><img src="https://github.com/gaoxianglong/encryption-dog/blob/master/resources/logo.png"/></div>
 
-[![License](https://img.shields.io/badge/license-Apache%202-4EB1BA.svg)](https://www.apache.org/licenses/LICENSE-2.0.html) ![License](https://img.shields.io/badge/build-passing-brightgreen.svg) ![License](https://img.shields.io/badge/version-1.6.0--RELEASE-blue)
+[![License](https://img.shields.io/badge/license-Apache%202-4EB1BA.svg)](https://www.apache.org/licenses/LICENSE-2.0.html) ![License](https://img.shields.io/badge/build-passing-brightgreen.svg) ![License](https://img.shields.io/badge/version-2.0.1--RELEASE-blue)
 > Encryption program with high performance, high security and rich functionsm.<br/>
 > Supports binding the same physical device for file encryption and decryption.<br/>
 
@@ -9,12 +9,12 @@
 ```shell
 git clone git@github.com:gaoxianglong/encrypt-dog-new.git
 mvn package
-alias dog = 'java -Xms1g -Xmx1g -Xmn384m -jar dog-2.0.0.jar'
+alias dog = 'java -Xms1g -Xmx1g -Xmn384m -jar dog-2.0.1.jar'
 ```
 or
 ```shell
-$ wget https://github.com/gaoxianglong/encrypt-dog-new/releases/download/1.6.0-RELEASE/dog-1.6.0.jar
-alias dog = 'java -Xms512m -Xmx512m -Xmn384m -jar dog-2.0.0.jar'
+$ wget https://github.com/gaoxianglong/encrypt-dog-new/releases/download/2.0.1-RELEASE/dog-2.0.1.jar
+alias dog = 'java -Xms512m -Xmx512m -Xmn384m -jar dog-2.0.1.jar'
 ```
 ### use
 ```shell
@@ -25,15 +25,16 @@ Welcome to
  / _// _ \/ __/ __/ // / _ \/ __/ / _ \/ _ \/ // / _ \/ _ `/
 /___/_//_/\__/_/  \_, / .__/\__/_/\___/_//_/____/\___/\_, /
                  /___/_/                             /___/
-	version: 2.0.0-RELEASE
+	version: 2.0.1-RELEASE
 
 Missing required options: '--secret-key', '--source-file=<source file>'
 Usage: encrypt-dog [-dehoV] -k [-k]... [-a=<encryptAlgorithm>] [-t=<storage
                    path>] -s=<source file>[,<source file>...]... [-s=<source
                    file>[,<source file>...]...]...
   -a, --encrypt-algorithm=<encryptAlgorithm>
-                     Set the algorithm type to use DESede encryption algorithm by
-                       default.
+                     The default encryption algorithm is AES. Currently
+                       supported encryption algorithms are AES, DESede (3DES),
+                       and XOR.
   -d, --delete       The source file is not deleted after the default operation.
   -e, --encrypt      The default is decryption mode.
   -h, --help         Show this help message and exit.

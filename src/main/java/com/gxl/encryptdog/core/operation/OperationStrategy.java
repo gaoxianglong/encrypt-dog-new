@@ -20,6 +20,7 @@ package com.gxl.encryptdog.core.operation;
 
 import com.gxl.encryptdog.base.common.Constants;
 import com.gxl.encryptdog.base.common.model.OperationVO;
+import com.gxl.encryptdog.base.enums.ChannelEnum;
 import com.gxl.encryptdog.base.error.*;
 import com.gxl.encryptdog.core.operation.proxy.params.ResultContext;
 import com.gxl.encryptdog.utils.Utils;
@@ -27,13 +28,13 @@ import com.gxl.encryptdog.utils.Utils;
 import java.io.IOException;
 
 /**
- * 加/解密操作接口
+ * 加/解密操作策略类
  *
  * @author gxl
  * @version Id: 1.0.0
  * @since 2023/10/1 10:10
  */
-public interface Operation {
+public interface OperationStrategy {
     /**
      * magic number
      */
@@ -54,6 +55,13 @@ public interface Operation {
      * @return
      */
     void execute(OperationVO operationVO, ResultContext context);
+
+    /**
+     * 加密类型检查
+     * @param encryptContext
+     * @throws ValidateException
+     */
+    void checkEncryptType(EncryptContext encryptContext) throws ValidateException, EncryptAlgorithmException;
 
     /**
      * 魔术检查
@@ -80,12 +88,10 @@ public interface Operation {
     void bind(EncryptContext encryptContext) throws EncryptException;
 
     /**
-     * 是否支持
-     * @param encryptAlgorithm
-     * @param isEncrypt
+     * 获取渠道
      * @return
      */
-    boolean isSupport(String encryptAlgorithm, boolean isEncrypt);
+    ChannelEnum getChannel();
 
     /**
      * 转储加/解密数据

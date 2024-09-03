@@ -42,6 +42,11 @@ import java.util.StringJoiner;
  */
 public class Utils {
     /**
+     * 保留一个整数的低8位
+     */
+    private static final int LOW_BYTE_MASK = 0xff;
+
+    /**
      * 验证是否是macos
      * @return
      */
@@ -200,26 +205,47 @@ public class Utils {
      */
     public static byte[] int2Bytes(int n) {
         var result = new byte[4];
-        result[3] = (byte) (n & 0xff);
-        result[2] = (byte) (n >> 8 & 0xff);
-        result[1] = (byte) (n >> 16 & 0xff);
-        result[0] = (byte) (n >> 24 & 0xff);
+        result[3] = (byte) (n & LOW_BYTE_MASK);
+        result[2] = (byte) (n >> 8 & LOW_BYTE_MASK);
+        result[1] = (byte) (n >> 16 & LOW_BYTE_MASK);
+        result[0] = (byte) (n >> 24 & LOW_BYTE_MASK);
         return result;
     }
 
     /**
-     * 字节数组转整型
+     * 4字节数组转整型
      *
      * @param b
      * @return
      */
-    public static int bytes2Int(byte[] b) {
+    public static int _4bytes2Int(byte[] b) {
         Objects.requireNonNull(b);
         var result = 0;
         for (var i = 0; i < b.length; i++) {
-            result += (b[i] & 0xff) << ((3 - i) * 8);
+            result += (b[i] & LOW_BYTE_MASK) << ((3 - i) * 8);
         }
         return result;
+    }
+
+    /**
+     * 整型转字节
+     *
+     * @param n
+     * @return
+     */
+    public static byte[] int2Byte(int n) {
+        return new byte[] { (byte) (n & LOW_BYTE_MASK) };
+    }
+
+    /**
+     * 1字节数组转整型
+     *
+     * @param b
+     * @return
+     */
+    public static int _1byte2Int(byte[] b) {
+        Objects.requireNonNull(b);
+        return b[0] & LOW_BYTE_MASK;
     }
 
     /**

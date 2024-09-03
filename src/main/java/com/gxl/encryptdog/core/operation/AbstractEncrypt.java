@@ -30,6 +30,7 @@ import com.gxl.encryptdog.utils.uuid.IdWorker;
 import com.gxl.encryptdog.utils.uuid.impl.SnowflakeIdWorker;
 
 import java.io.*;
+import java.util.Objects;
 import java.util.Properties;
 
 /**
@@ -43,13 +44,18 @@ public abstract class AbstractEncrypt extends AbstractOperationTemplate {
     /**
      * 获取设备唯一标识命令
      */
-    private HardwareCommand  hardwareCommand = new HardwareCommandImpl();
-    public static final long IDC_ID          = (long) (Math.random() * (~(-1L << 5L)));
-    public static final long WORKER_ID       = (long) (Math.random() * (~(-1L << 5L)));
+    private HardwareCommand    hardwareCommand              = new HardwareCommandImpl();
+    public static final long   IDC_ID                       = (long) (Math.random() * (~(-1L << 5L)));
+    public static final long   WORKER_ID                    = (long) (Math.random() * (~(-1L << 5L)));
     /**
      * 雪花id
      */
-    private IdWorker<Long>   idWorker        = new SnowflakeIdWorker(IDC_ID, WORKER_ID);
+    private IdWorker<Long>     idWorker                     = new SnowflakeIdWorker(IDC_ID, WORKER_ID);
+
+    /**
+     * 加密时缺省每次写入10MB,和读取不同,写入量是一致的
+     */
+    protected static final int DEFAULT_ENCRYPT_CONTENT_SIZE = 0xa00000;
 
     public AbstractEncrypt(ObServerContext obServer) {
         super(obServer);
@@ -75,6 +81,29 @@ public abstract class AbstractEncrypt extends AbstractOperationTemplate {
     }
 
     /**
+     * 加密类型验证,这里主要是在魔术后追加u1/8bit的加密类型
+     * @param encryptContext
+     * @throws ValidateException
+     */
+    @Override
+    public void checkEncryptType(EncryptContext encryptContext) throws ValidateException, EncryptAlgorithmException {
+        // 获得文件句柄
+        var out = encryptContext.getOutputStream();
+
+        // 获取加密算法类型
+        var encryptAlgorithm = encryptContext.getOperationVO().getEncryptAlgorithm();
+        if (Objects.isNull(encryptAlgorithm)) {
+            throw new ValidateException("You cannot use a non-existent encryption algorithm.");
+        }
+        try {
+            // 写入u1/8bit的加密类型
+            out.write(Utils.int2Byte(encryptAlgorithm.getId()));
+        } catch (Throwable e) {
+            throw new EncryptAlgorithmException("Encrypt algorithm write failed", e);
+        }
+    }
+
+    /**
      * 是否仅限在相同的物理设备上完成加/解密操作
      *
      * @param encryptContext
@@ -88,7 +117,7 @@ public abstract class AbstractEncrypt extends AbstractOperationTemplate {
                 // 获取物理设备id
                 var hardwareId = getHardwareId();
                 // 写入u1/8bit的hardwareId长度
-                out.write(new byte[] { (byte) (hardwareId.length & 0xff) });
+                out.write(Utils.int2Byte(hardwareId.length));
                 // 写入物理设备id
                 out.write(hardwareId, 0, hardwareId.length);
                 // 写入文件唯一id
@@ -173,13 +202,24 @@ public abstract class AbstractEncrypt extends AbstractOperationTemplate {
     }
 
     /**
+     * 获取分段操作容量
+     *
+     * @param capacity
+     * @return
+     */
+    @Override
+    public int getDefaultCapacity(long capacity) {
+        return capacity <= DEFAULT_ENCRYPT_CONTENT_SIZE ? (int) capacity : DEFAULT_ENCRYPT_CONTENT_SIZE;
+    }
+
+    /**
      * 数据加密操作
      * @param content
      * @param secretKey
      * @return
      * @throws EncryptException
      */
-    public abstract byte[] dataEncrypt(byte[] content, char[] secretKey) throws EncryptException;
+    protected abstract byte[] dataEncrypt(byte[] content, char[] secretKey) throws EncryptException;
 
     /**
      * 存储--only-local场景下的真实秘钥

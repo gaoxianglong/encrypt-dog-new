@@ -22,12 +22,14 @@ import com.gxl.encryptdog.base.common.Constants;
 import com.gxl.encryptdog.base.common.model.OperationContext;
 import com.gxl.encryptdog.base.common.model.OperationVO;
 import com.gxl.encryptdog.base.common.tp.impl.CachedThreadPool;
+import com.gxl.encryptdog.base.enums.ChannelEnum;
 import com.gxl.encryptdog.base.error.BaseException;
 import com.gxl.encryptdog.base.error.OperationException;
+import com.gxl.encryptdog.base.error.ValidateException;
 import com.gxl.encryptdog.core.event.FinishedEvent;
 import com.gxl.encryptdog.core.event.observer.ObServerContext;
 import com.gxl.encryptdog.core.event.observer.impl.ObServerContextImpl;
-import com.gxl.encryptdog.core.operation.Operation;
+import com.gxl.encryptdog.core.operation.OperationStrategy;
 import com.gxl.encryptdog.core.operation.proxy.Proxy;
 import com.gxl.encryptdog.core.operation.proxy.params.DashboardViewState;
 import com.gxl.encryptdog.core.operation.proxy.params.ResultContext;
@@ -40,8 +42,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.reflections.Reflections;
 
 import java.lang.reflect.Modifier;
-import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.*;
 
 /**
@@ -54,25 +57,25 @@ import java.util.concurrent.*;
 @Slf4j
 public class EncryptProxy implements Proxy {
     /**
-     * 加解密器责任链
+     * 策略集合
      */
-    private List<Operation> operationList   = new ArrayList<>();
+    private Map<ChannelEnum, OperationStrategy> channels        = new ConcurrentHashMap<>();
     /**
      * CachedThreadPool工作线程组
      */
-    private ExecutorService executorService = new CachedThreadPool().buildExecutor();
+    private ExecutorService                     executorService = new CachedThreadPool().buildExecutor();
     /**
      * 执行结果数据上下文
      */
-    private ResultContext   resultContext   = new ResultContext();
+    private ResultContext                       resultContext   = new ResultContext();
     /**
      * Dashboard渲染
      */
-    private View            view            = new DashboardView();
+    private View                                view            = new DashboardView();
     /**
      * 事件广播器
      */
-    private ObServerContext obServer        = new ObServerContextImpl();
+    private ObServerContext                     obServer        = new ObServerContextImpl();
 
     public EncryptProxy() {
         // 初始化加/解密器
@@ -96,7 +99,7 @@ public class EncryptProxy implements Proxy {
             var latch = new CountDownLatch(voList.size() + 1);
             for (var vo : voList) {
                 // 执行加/解密操作
-                executorService.execute(new EncryptExecuter(getOperation(context), vo, resultContext, latch));
+                executorService.execute(new EncryptExecuter(getChannel(context), vo, resultContext, latch));
             }
 
             // 定时渲染dashboard视图
@@ -133,12 +136,18 @@ public class EncryptProxy implements Proxy {
 
     /**
      * Dashboard数据初始化
-     *
      * @param voList
      * @param isEncrypt
+     * @throws ValidateException
      */
-    private void initDashboard(List<OperationVO> voList, boolean isEncrypt) {
+    private void initDashboard(List<OperationVO> voList, boolean isEncrypt) throws ValidateException {
+        if (voList.isEmpty()) {
+            throw new ValidateException("Input information cannot be null.");
+        }
         var viewStates = resultContext.getDashboardViewStates();
+
+        // 从领域模型中获取加密算法类型
+        String encryptAlgorithm = voList.get(0).getEncryptAlgorithm().getAlgorithmType();
         for (var operationVO : voList) {
             var key = operationVO.getSourceFilePath();
             var rlt = new DashboardViewState(key);
@@ -152,49 +161,56 @@ public class EncryptProxy implements Proxy {
         var viewResult = resultContext.getDashboardViewResult();
         // 设置本次操作类型
         viewResult.setOperation(Utils.getOperateType(isEncrypt));
+        // 设置加密算法类型
+        viewResult.setEncryptAlgorithm(encryptAlgorithm);
         // 设置总文件数量
         viewResult.setFileSize(String.valueOf(voList.size()));
     }
 
     /**
-     * 从责任链中获取对应的加解密器
+     * 获取渠道
      *
      * @param context
      * @return
      * @throws OperationException
      */
-    private Operation getOperation(OperationContext context) throws OperationException {
+    private OperationStrategy getChannel(OperationContext context) throws OperationException {
         var request = context.getConsoleRequest();
-        for (Operation operation : operationList) {
-            // 匹配支持的加解密器
-            if (operation.isSupport(request.getEncryptAlgorithm(), request.isEncrypt())) {
-                return operation;
-            }
+        // 是否是加密
+        var isEncrypt = request.isEncrypt();
+        // 加密算法类型
+        var encryptAlgorithm = request.getEncryptAlgorithm();
+        // 获取渠道
+        var channel = ChannelEnum.getChannel(isEncrypt, encryptAlgorithm);
+        if (Objects.isNull(channel)) {
+            throw new OperationException("Non-existent encryption algorithm.");
         }
-        throw new OperationException("Unsupported encryption or decryption algorithm type");
+        // 根据映射关系获取具体的加/解密器
+        return channels.get(channel);
     }
 
     /**
      * 初始化加/解密器
      */
     private void initOperationList() {
-        if (!operationList.isEmpty()) {
+        if (!channels.isEmpty()) {
             return;
         }
         try {
             // 获取目标路径下的所有类型
             var reflections = new Reflections(Constants.DEFAULT_SCAN_OPERATION_CLS_PATH);
             // 获取目标类型的所有子类
-            for (var cls : reflections.getSubTypesOf(Operation.class)) {
-                // 排除abstract
-                if (Modifier.isAbstract(cls.getModifiers()) ||
-                // 排除interface
-                    Modifier.isInterface(cls.getModifiers())) {
+            for (var cls : reflections.getSubTypesOf(OperationStrategy.class)) {
+                // 排除abstract和interface
+                if (Modifier.isAbstract(cls.getModifiers()) || Modifier.isInterface(cls.getModifiers())) {
                     continue;
                 }
-                operationList.add(cls.getConstructor(ObServerContext.class).newInstance(obServer));
+                var channel = cls.getConstructor(ObServerContext.class).newInstance(obServer);
+                // 构建映射关系
+                channels.put(channel.getChannel(), channel);
             }
         } catch (Throwable e) {
+            e.printStackTrace();
             //...
         }
     }

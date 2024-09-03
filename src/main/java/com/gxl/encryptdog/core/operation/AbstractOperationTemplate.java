@@ -19,6 +19,7 @@
 package com.gxl.encryptdog.core.operation;
 
 import com.gxl.encryptdog.base.common.model.OperationVO;
+import com.gxl.encryptdog.base.enums.ChannelEnum;
 import com.gxl.encryptdog.base.enums.EncryptStateEnum;
 import com.gxl.encryptdog.base.enums.ExecResultEnum;
 import com.gxl.encryptdog.base.error.*;
@@ -31,6 +32,7 @@ import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.*;
+import java.util.Objects;
 
 /**
  * 加/解密操作模版类
@@ -41,7 +43,7 @@ import java.io.*;
  */
 @Slf4j
 @Getter
-public abstract class AbstractOperationTemplate implements Operation {
+public abstract class AbstractOperationTemplate implements OperationStrategy {
     /**
      * 状态机
      */
@@ -49,7 +51,7 @@ public abstract class AbstractOperationTemplate implements Operation {
     /**
      * 事件广播器
      */
-    private ObServerContext obServer;
+    private ObServerContext     obServer;
 
     public AbstractOperationTemplate(ObServerContext obServer) {
         this.obServer = obServer;
@@ -72,16 +74,24 @@ public abstract class AbstractOperationTemplate implements Operation {
         var sourceFileCapacity = operationVO.getSourceFileCapacity();
         EncryptContext encryptContext = null;
         try (var in = new BufferedInputStream(new FileInputStream(sourceFilePath)); var out = new BufferedOutputStream(new FileOutputStream(targetFilePath))) {
-            // 构建DecryptContext
-            encryptContext = buildDecryptContext(context, sourceFileCapacity, getDefaultCapacity(sourceFileCapacity), operationVO, in, out);
+            // 构建DecryptContext上下文信息类
+            encryptContext = buildDecryptContext(
+                // 执行结果数据上下文
+                context,
+                // 源文件容量
+                sourceFileCapacity,
+                // 每次加/解密的操作大小,加密时AbstractEncrypt指定为10MB,解密时由AbstractDecrypt的子类自行实现
+                getDefaultCapacity(sourceFileCapacity),
+                // 加/解密领域模型
+                operationVO,
+                // 读/写文件句柄
+                in, out);
+
             // 将任务状态流转为RUNNING
             processState.setState(encryptContext, EncryptStateEnum.RUNNING);
 
-            // 魔术检测,如果是加密操作,则在文件起始位写入u4/32bit魔术码
-            checkMagicNumber(encryptContext);
-
-            // 最高安全性的本地化处理
-            onlyLocal(encryptContext);
+            // 解析文件头信息
+            parseHeader(encryptContext);
 
             // 将加/解密内容写入目标文件
             store(encryptContext);
@@ -157,8 +167,19 @@ public abstract class AbstractOperationTemplate implements Operation {
     }
 
     @Override
-    public boolean isSupport(String encryptAlgorithm, boolean isEncrypt) {
-        return false;
+    public ChannelEnum getChannel() {
+        return null;
+    }
+
+    /**
+     * 加密类型检查
+     * @param encryptContext
+     * @throws ValidateException
+     * @throws EncryptAlgorithmException
+     */
+    @Override
+    public void checkEncryptType(EncryptContext encryptContext) throws ValidateException, EncryptAlgorithmException {
+
     }
 
     /**
@@ -188,18 +209,18 @@ public abstract class AbstractOperationTemplate implements Operation {
     private EncryptContext buildDecryptContext(ResultContext context, long sourceFileCapacity, int defaultCapacity, OperationVO operationVO, BufferedInputStream in,
                                                BufferedOutputStream out) {
         return new EncryptContext()
-                // 设置执行结果数据上下文
-                .setResultContext(context)
-                // 设置每次加/解密读取的文件内容大小
-                .setDefaultCapacity(defaultCapacity)
-                // 设置加/解密领域模型
-                .setOperationVO(operationVO)
-                // 设置源文件容量
-                .setSourceFileCapacity(sourceFileCapacity)
-                // 设置读文件句柄
-                .setInputStream(in)
-                // 设置写文件句柄
-                .setOutputStream(out);
+            // 设置执行结果数据上下文
+            .setResultContext(context)
+            // 设置每次加/解密读取的文件内容大小
+            .setDefaultCapacity(defaultCapacity)
+            // 设置加/解密领域模型
+            .setOperationVO(operationVO)
+            // 设置源文件容量
+            .setSourceFileCapacity(sourceFileCapacity)
+            // 设置读文件句柄
+            .setInputStream(in)
+            // 设置写文件句柄
+            .setOutputStream(out);
     }
 
     /**
@@ -237,5 +258,33 @@ public abstract class AbstractOperationTemplate implements Operation {
         bind(encryptContext);
         // 最高安全性-创建随机秘钥文件
         createSecretkeyFile();
+    }
+
+    /**
+     * 解析文件头信息
+     *
+     * File Header Structure:
+     *
+     * +----------------------------+---------------------------+---------------------+-------------------------+-------------------+----------------+
+     * | magic-number: u4/32bit     | encryption-type: u1/8bit  | hid-length: u1/8bit | hardware-id: uX/36bit   | file-id: u8/64bit | file data...   |
+     * | Value: 0x19890225          | (e.g., encryption type)   |                     | (e.g., 36 bits)         |                   |                |
+     * +----------------------------+---------------------------+---------------------+-------------------------+-------------------+----------------+
+     *
+     * @param context
+     * throws ParseException
+     */
+    private void parseHeader(EncryptContext context) throws ValidateException, EncryptException, IOException {
+        if (Objects.isNull(context)) {
+            throw new ValidateException("The context info is null");
+        }
+
+        // 魔术检测,如果是加密操作,则在文件起始位写入u4/32bit魔术码
+        checkMagicNumber(context);
+
+        // 加密类型检测,如果是加密操作，则在魔术后写入u1/8bit加密类型
+        checkEncryptType(context);
+
+        // 最高安全性的本地化处理,这里跟UUID有关
+        onlyLocal(context);
     }
 }

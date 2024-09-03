@@ -20,6 +20,7 @@ package com.gxl.encryptdog.core.shell;
 
 import com.gxl.encryptdog.base.common.model.OperationContext;
 import com.gxl.encryptdog.base.common.model.OperationVO;
+import com.gxl.encryptdog.base.enums.EncryptTypeEnum;
 import com.gxl.encryptdog.base.error.*;
 import com.gxl.encryptdog.core.operation.proxy.Proxy;
 import com.gxl.encryptdog.core.operation.proxy.impl.EncryptProxy;
@@ -87,7 +88,7 @@ public class EncryptDogConsole extends ConsoleRequest implements Runnable {
             // 构建OperationContext
             var context = buildOperationContext(buildOperationVO());
 
-            // 执行加解密操作
+            // 执行加/解密操作
             proxy.invoke(context);
         } catch (ExitException e) {
             // 用户主动退出
@@ -112,11 +113,14 @@ public class EncryptDogConsole extends ConsoleRequest implements Runnable {
      */
     private List<OperationVO> buildOperationVO() {
         var rlt = new ArrayList<OperationVO>();
+
+        // 遍历源文件
         for (var sf : getSourceFiles()) {
             var operationVO = new OperationVO();
             operationVO.setEncrypt(isEncrypt());
             operationVO.setDelete(isDelete());
-            operationVO.setEncryptAlgorithm(getEncryptAlgorithm());
+            // 设置加密算法类型
+            setEncryptType(operationVO);
             operationVO.setOnlyLocal(isOnlyLocal());
             operationVO.setSourceFilePath(sf);
             operationVO.setTargetFile(getConsoleRequest(), sf);
@@ -125,6 +129,16 @@ public class EncryptDogConsole extends ConsoleRequest implements Runnable {
             rlt.add(operationVO);
         }
         return rlt;
+    }
+
+    /**
+     * 设置加密算法类型
+     * @param operationVO
+     */
+    private void setEncryptType(OperationVO operationVO) {
+        // 获取加密算法类型
+        var encryptType = EncryptTypeEnum.check(getEncryptAlgorithm());
+        operationVO.setEncryptAlgorithm(encryptType);
     }
 
     /**

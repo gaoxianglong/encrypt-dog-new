@@ -61,7 +61,7 @@ public enum EncryptStateEnum {
                                                    private static final long serialVersionUID = -6390379820870308191L;
 
                                                    {
-                                                       for (EncryptStateEnum e : EncryptStateEnum.values()) {
+                                                       for (var e : EncryptStateEnum.values()) {
                                                            put(e.getCode(), e);
                                                        }
                                                    }

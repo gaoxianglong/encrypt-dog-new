@@ -65,4 +65,8 @@ public class DashboardViewResult implements Serializable {
      * 总耗时
      */
     private String            timeConsuming     = "-";
+    /**
+     * 算法类型
+     */
+    private String            encryptAlgorithm;
 }

@@ -30,9 +30,19 @@ import lombok.Getter;
 @Getter
 public enum EncryptTypeEnum {
                              /**
-                              * 3DES堆成加密算法
+                              * 3DES对称加密算法
                               */
-                             TRIPLE_DES(0, "DESede", "3DES对称加密算法");
+                             TRIPLE_DES(0, "DESede", "3DES对称加密算法"),
+
+                             /**
+                              * XOR异或加密算法,主要是做混淆,使用请注意
+                              */
+                             XOR(1, "XOR", "XOR异或加密算法"),
+
+                             /**
+                              * AES对称加密算法,安全性高,速度快(约DESede的5倍)
+                              */
+                             AES(2, "AES", "AES256对称加密算法");
 
     private int    id;
     /**
@@ -55,12 +65,12 @@ public enum EncryptTypeEnum {
      * @param name
      * @return
      */
-    public static boolean check(String name) {
+    public static EncryptTypeEnum check(String name) {
         for (var typeEnum : EncryptTypeEnum.values()) {
             if (typeEnum.algorithmType.equalsIgnoreCase(name)) {
-                return true;
+                return typeEnum;
             }
         }
-        return false;
+        return null;
     }
 }

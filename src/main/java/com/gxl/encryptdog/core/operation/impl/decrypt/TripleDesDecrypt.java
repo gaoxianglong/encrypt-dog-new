@@ -18,9 +18,9 @@
 
 package com.gxl.encryptdog.core.operation.impl.decrypt;
 
-import com.google.common.base.Charsets;
+import com.gxl.encryptdog.base.enums.ChannelEnum;
 import com.gxl.encryptdog.base.enums.EncryptTypeEnum;
-import com.gxl.encryptdog.base.error.EncryptException;
+import com.gxl.encryptdog.base.error.DecryptException;
 import com.gxl.encryptdog.core.event.observer.ObServerContext;
 import com.gxl.encryptdog.core.operation.AbstractDecrypt;
 import com.gxl.encryptdog.utils.Utils;
@@ -28,11 +28,7 @@ import com.gxl.encryptdog.utils.Utils;
 import javax.crypto.Cipher;
 import javax.crypto.KeyGenerator;
 import javax.crypto.spec.SecretKeySpec;
-import java.io.BufferedInputStream;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.security.SecureRandom;
-import java.util.Properties;
 
 /**
  * TripleDes算法解密
@@ -47,9 +43,9 @@ public class TripleDesDecrypt extends AbstractDecrypt {
      */
     private static final String ALGORITHM_TYPE               = EncryptTypeEnum.TRIPLE_DES.getAlgorithmType();
     /**
-     * 解密时缺省每次读取13981024bytes
+     * 解密时缺省每次读取 10485768 bytes
      */
-    public static final int     DEFAULT_DECRYPT_CONTENT_SIZE = 0xd55560;
+    public static final int     DEFAULT_DECRYPT_CONTENT_SIZE = 0xa00008;
     /**
      * 加密算法名称/分组加密/分组填充
      */
@@ -64,50 +60,20 @@ public class TripleDesDecrypt extends AbstractDecrypt {
     }
 
     /**
-     * 是否支持
-     * @return
-     */
-    @Override
-    public boolean isSupport(String encryptAlgorithm, boolean isEncrypt) {
-        return !isEncrypt && EncryptTypeEnum.check(encryptAlgorithm) && ALGORITHM_TYPE.equalsIgnoreCase(encryptAlgorithm);
-    }
-
-    /**
      * 数据解密操作
      * @param content
      * @param secretKey
      * @return
-     * @throws EncryptException
+     * @throws DecryptException
      */
     @Override
-    public byte[] dataDecrypt(byte[] content, char[] secretKey) throws EncryptException {
+    public byte[] dataDecrypt(byte[] content, char[] secretKey) throws DecryptException {
         try {
             var dc = Cipher.getInstance(CIPHER_ALGORITHM);
             dc.init(Cipher.DECRYPT_MODE, getSecretKeySpec(secretKey));
-            return dc.doFinal(Utils.toBase64Decode(content));
+            return dc.doFinal(content);
         } catch (Throwable e) {
-            throw new EncryptException("The key is incorrect,Try Again", e);
-        }
-    }
-
-    /**
-     * 返回秘钥器
-     * @param secretKey
-     * @return
-     * @throws EncryptException
-     */
-    private SecretKeySpec getSecretKeySpec(char[] secretKey) throws EncryptException {
-        try {
-            var secureRandom = SecureRandom.getInstance(SECURE_RANDOM_ALGORITHM);
-            secureRandom.setSeed(Utils.chars2Bytes(secretKey));
-            var kg = KeyGenerator.getInstance(ALGORITHM_TYPE);
-            kg.init(secureRandom);
-            var generateKey = kg.generateKey();
-
-            // 当秘钥不足192bit时会自动补全,超出则截取前192bit数据
-            return new SecretKeySpec(generateKey.getEncoded(), ALGORITHM_TYPE);
-        } catch (Throwable e) {
-            throw new EncryptException(e);
+            throw new DecryptException("The key is incorrect,Try Again", e);
         }
     }
 
@@ -120,5 +86,35 @@ public class TripleDesDecrypt extends AbstractDecrypt {
     @Override
     public int getDefaultCapacity(long capacity) {
         return capacity <= DEFAULT_DECRYPT_CONTENT_SIZE ? (int) capacity : DEFAULT_DECRYPT_CONTENT_SIZE;
+    }
+
+    /**
+     * 获取解密渠道
+     * @return
+     */
+    @Override
+    public ChannelEnum getChannel() {
+        return ChannelEnum._3DES_DECRYPT;
+    }
+
+    /**
+     * 返回秘钥器
+     * @param secretKey
+     * @return
+     * @throws DecryptException
+     */
+    private SecretKeySpec getSecretKeySpec(char[] secretKey) throws DecryptException {
+        try {
+            var secureRandom = SecureRandom.getInstance(SECURE_RANDOM_ALGORITHM);
+            secureRandom.setSeed(Utils.chars2Bytes(secretKey));
+            var kg = KeyGenerator.getInstance(ALGORITHM_TYPE);
+            kg.init(secureRandom);
+            var generateKey = kg.generateKey();
+
+            // 当秘钥不足192bit时会自动补全,超出则截取前192bit数据
+            return new SecretKeySpec(generateKey.getEncoded(), ALGORITHM_TYPE);
+        } catch (Throwable e) {
+            throw new DecryptException(e);
+        }
     }
 }

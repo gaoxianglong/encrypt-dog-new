@@ -19,6 +19,7 @@
 package com.gxl.encryptdog.base.common.model;
 
 import com.gxl.encryptdog.base.common.Constants;
+import com.gxl.encryptdog.base.enums.EncryptTypeEnum;
 import com.gxl.encryptdog.base.error.OperationException;
 import com.gxl.encryptdog.core.shell.request.ConsoleRequest;
 import com.gxl.encryptdog.utils.Utils;
@@ -65,7 +66,7 @@ public class OperationVO implements Serializable {
     /**
      * 加解密算法类型
      */
-    private String            encryptAlgorithm;
+    private EncryptTypeEnum   encryptAlgorithm;
     /**
      * 秘钥
      */
@@ -162,7 +163,7 @@ public class OperationVO implements Serializable {
         isOnlyLocal = onlyLocal;
     }
 
-    public void setEncryptAlgorithm(String encryptAlgorithm) {
+    public void setEncryptAlgorithm(EncryptTypeEnum encryptAlgorithm) {
         this.encryptAlgorithm = encryptAlgorithm;
     }
 

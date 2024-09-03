@@ -66,7 +66,7 @@ public class ViewRenderUtil {
     }
 
     /**
-     * 加/解密操作结束时的提示信息
+     * 加/解密操作结束时的提示信息(暂时没用到)
      * @param context
      * @param timeConsuming
      * @param isEncrypt
@@ -285,7 +285,7 @@ public class ViewRenderUtil {
         // 数据填充
         table.row(
             // 添加操作类型
-            new LabelElement(viewResult.getOperation()),
+            new LabelElement(String.format("%s(%s)", viewResult.getOperation(), viewResult.getEncryptAlgorithm())),
             // 添加文件总数
             new LabelElement(viewResult.getFileSize()),
             // 添加成功数

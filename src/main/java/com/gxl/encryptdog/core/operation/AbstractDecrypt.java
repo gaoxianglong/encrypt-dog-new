@@ -46,16 +46,20 @@ public abstract class AbstractDecrypt extends AbstractOperationTemplate {
     /**
      * UUID长度1bytes
      */
-    private static final int UUID_BYTES    = 1;
+    private static final int UUID_BYTES           = 1;
+    /**
+     * 加密类型长度1bytes
+     */
+    private static final int ENCRYPT_LENGTH_BYTES = 1;
     /**
      * 文件唯一id长度为64bit
      */
-    private static final int FILE_ID_BYTES = 8;
+    private static final int FILE_ID_BYTES        = 8;
     protected Long           fileId;
     /**
      * 获取设备唯一标识命令接口
      */
-    private HardwareCommand  command       = new HardwareCommandImpl();
+    private HardwareCommand  command              = new HardwareCommandImpl();
 
     public AbstractDecrypt(ObServerContext obServer) {
         super(obServer);
@@ -71,8 +75,30 @@ public abstract class AbstractDecrypt extends AbstractOperationTemplate {
             throw new MagicNumberException(e.getMessage(), e);
         }
         // 魔术判断
-        if (Utils.bytes2Int(magicNumber) != MAGIC_NUMBER) {
+        if (Utils._4bytes2Int(magicNumber) != MAGIC_NUMBER) {
             throw new MagicNumberException("Bad magic number");
+        }
+    }
+
+    /**
+     * 加密类型验证
+     * @param encryptContext
+     * @throws ValidateException
+     * @throws EncryptAlgorithmException
+     */
+    @Override
+    public void checkEncryptType(EncryptContext encryptContext) throws ValidateException, EncryptAlgorithmException {
+        // 获取文件句柄
+        var in = encryptContext.getInputStream();
+        var encryptType = new byte[ENCRYPT_LENGTH_BYTES];
+        try {
+            in.read(encryptType);
+        } catch (Throwable e) {
+            throw new EncryptAlgorithmException(e.getMessage(), e);
+        }
+        // 验证加密算法跟文件头的加密算法是否一致
+        if (Utils._1byte2Int(encryptType) != encryptContext.getOperationVO().getEncryptAlgorithm().getId()) {
+            throw new EncryptAlgorithmException("The algorithm used is not the encryption algorithm specified during encryption.");
         }
     }
 
@@ -83,7 +109,7 @@ public abstract class AbstractDecrypt extends AbstractOperationTemplate {
         try {
             // 读取hardwareUUID长度
             in.read(hardwareLength);
-            var length = hardwareLength[0] & 0xff;
+            var length = Utils._1byte2Int(hardwareLength);
             // 如果没有开启--onlyLocal命令则hardwareLength=0
             if (0 == length) {
                 return;
@@ -176,15 +202,6 @@ public abstract class AbstractDecrypt extends AbstractOperationTemplate {
     }
 
     /**
-     * 数据解密操作
-     * @param content
-     * @param secretKey
-     * @return
-     * @throws EncryptException
-     */
-    public abstract byte[] dataDecrypt(byte[] content, char[] secretKey) throws EncryptException;
-
-    /**
      * 还原真实秘钥
      * @param fileId
      * @param operationVO
@@ -207,6 +224,15 @@ public abstract class AbstractDecrypt extends AbstractOperationTemplate {
             throw new OperationException(e.getMessage(), e);
         }
     }
+
+    /**
+     * 数据解密操作
+     * @param content
+     * @param secretKey
+     * @return
+     * @throws DecryptException
+     */
+    protected abstract byte[] dataDecrypt(byte[] content, char[] secretKey) throws DecryptException;
 
     /**
      * 构建EstimatedTimeEvent

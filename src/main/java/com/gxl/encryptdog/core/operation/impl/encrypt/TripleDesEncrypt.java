@@ -18,9 +18,10 @@
 
 package com.gxl.encryptdog.core.operation.impl.encrypt;
 
-import com.google.common.base.Charsets;
+import com.gxl.encryptdog.base.enums.ChannelEnum;
 import com.gxl.encryptdog.base.enums.EncryptTypeEnum;
 import com.gxl.encryptdog.base.error.EncryptException;
+import com.gxl.encryptdog.base.error.OperationException;
 import com.gxl.encryptdog.core.event.observer.ObServerContext;
 import com.gxl.encryptdog.core.operation.AbstractEncrypt;
 import com.gxl.encryptdog.utils.Utils;
@@ -31,45 +32,30 @@ import javax.crypto.spec.SecretKeySpec;
 import java.security.SecureRandom;
 
 /**
- * TripleDes算法加密
+ * TripleDes算法加密,安全性高
  *
  * @author gxl
  * @version Id: 1.0.0
  * @since 2023/9/23 14:35
  */
-public class TripleDesEecrypt extends AbstractEncrypt {
+public class TripleDesEncrypt extends AbstractEncrypt {
     /**
      * 加密算法名称
      */
-    private static final String ALGORITHM_TYPE               = EncryptTypeEnum.TRIPLE_DES.getAlgorithmType();
-
-    /**
-     * 加密时缺省每次读取10MB
-     */
-    private static final int    DEFAULT_ENCRYPT_CONTENT_SIZE = 0xa00000;
+    private static final String ALGORITHM_TYPE          = EncryptTypeEnum.TRIPLE_DES.getAlgorithmType();
 
     /**
      * 加密算法名称/分组加密/分组填充
      */
-    private static final String CIPHER_ALGORITHM             = String.format("%s/ECB/PKCS5Padding", ALGORITHM_TYPE);
+    private static final String CIPHER_ALGORITHM        = String.format("%s/ECB/PKCS5Padding", ALGORITHM_TYPE);
+
     /**
      * SecureRandom使用SHA1PRNG加密算法
      */
-    private static final String SECURE_RANDOM_ALGORITHM      = "SHA1PRNG";
+    private static final String SECURE_RANDOM_ALGORITHM = "SHA1PRNG";
 
-    public TripleDesEecrypt(ObServerContext obServer) {
+    public TripleDesEncrypt(ObServerContext obServer) {
         super(obServer);
-    }
-
-    /**
-     * 获取分段操作容量
-     *
-     * @param capacity
-     * @return
-     */
-    @Override
-    public int getDefaultCapacity(long capacity) {
-        return capacity <= DEFAULT_ENCRYPT_CONTENT_SIZE ? (int) capacity : DEFAULT_ENCRYPT_CONTENT_SIZE;
     }
 
     /**
@@ -83,14 +69,21 @@ public class TripleDesEecrypt extends AbstractEncrypt {
     public byte[] dataEncrypt(byte[] content, char[] secretKey) throws EncryptException {
         try {
             var cipher = Cipher.getInstance(CIPHER_ALGORITHM);
-            cipher.init(Cipher.ENCRYPT_MODE, getSecretKeySpec(secretKey));
+            cipher.init(Cipher.ENCRYPT_MODE, getGenerateKey(secretKey));
             // 执行数据加密
-            var data = cipher.doFinal(content);
-            // 对加密结果进行base64编码
-            return Utils.toBase64Encode(data).getBytes(Charsets.UTF_8);
+            return cipher.doFinal(content);
         } catch (Throwable e) {
             throw new EncryptException(e);
         }
+    }
+
+    /**
+     * 获取加密渠道
+     * @return
+     */
+    @Override
+    public ChannelEnum getChannel() {
+        return ChannelEnum._3DES_ENCRYPT;
     }
 
     /**
@@ -99,7 +92,7 @@ public class TripleDesEecrypt extends AbstractEncrypt {
      * @return
      * @throws EncryptException
      */
-    private SecretKeySpec getSecretKeySpec(char[] secretKey) throws EncryptException {
+    private SecretKeySpec getGenerateKey(char[] secretKey) throws EncryptException {
         try {
             var secureRandom = SecureRandom.getInstance(SECURE_RANDOM_ALGORITHM);
             secureRandom.setSeed(Utils.chars2Bytes(secretKey));
@@ -112,15 +105,5 @@ public class TripleDesEecrypt extends AbstractEncrypt {
         } catch (Throwable e) {
             throw new EncryptException(e);
         }
-    }
-
-    /**
-     * 是否支持
-     * @return
-     */
-    @Override
-    public boolean isSupport(String encryptAlgorithm, boolean isEncrypt) {
-        // 校验是否是加密操作&算法是否存在&当前加密器是否支持
-        return isEncrypt && EncryptTypeEnum.check(encryptAlgorithm) && ALGORITHM_TYPE.equalsIgnoreCase(encryptAlgorithm);
     }
 }
