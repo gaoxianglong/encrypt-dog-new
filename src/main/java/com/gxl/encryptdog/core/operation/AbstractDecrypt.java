@@ -102,7 +102,7 @@ public abstract class AbstractDecrypt extends AbstractOperationTemplate {
         }
         // 验证加密算法跟文件头的加密算法是否一致
         if (Utils._1byte2Int(encryptType) != encryptContext.getOperationVO().getEncryptAlgorithm().getId()) {
-            throw new EncryptAlgorithmException("The algorithm used is not the encryption algorithm specified during encryption.");
+            throw new EncryptAlgorithmException("The encryption and decryption algorithms are inconsistent.");
         }
     }
 
