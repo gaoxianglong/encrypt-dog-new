@@ -5,8 +5,9 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>org.example</groupId>
     <artifactId>encrypt-dog-new</artifactId>
-    <version>2.0.1-RELEASE</version>
+    <version>2.0.2-RELEASE</version>
     <description>
+        2.0.2-RELEASE 增加IV向量安全性
         2.0.1-RELEASE 性能优化和代码结构调整,同时扩展了AES和XOR加密算法
         2.0.0-RELEASE 完全重写版本,支持并发性能模式
         1.6.0-RELEASE 缺省文件加/解密后输出到原路径下,文件匹配正则扩展

@@ -79,6 +79,10 @@ public class OperationVO implements Serializable {
      * 源文件容量大小
      */
     private long              sourceFileCapacity;
+    /**
+     * 初始化向量
+     */
+    private byte[]            iv;
 
     /**
      * 设置目标文件的全限定名
@@ -169,5 +173,9 @@ public class OperationVO implements Serializable {
 
     public void setSourceFileCapacity(long sourceFileCapacity) {
         this.sourceFileCapacity = sourceFileCapacity;
+    }
+
+    public void setIv(byte[] iv) {
+        this.iv = iv;
     }
 }

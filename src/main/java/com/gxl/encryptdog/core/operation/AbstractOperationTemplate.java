@@ -167,6 +167,11 @@ public abstract class AbstractOperationTemplate implements OperationStrategy {
     }
 
     @Override
+    public void initVector(EncryptContext encryptContext) throws OperationException {
+
+    }
+
+    @Override
     public ChannelEnum getChannel() {
         return null;
     }
@@ -261,19 +266,20 @@ public abstract class AbstractOperationTemplate implements OperationStrategy {
     }
 
     /**
-     * 解析文件头信息
+     * 解析文件头
      *
-     * File Header Structure:
+     * +------------------------+---------------------------+---------------------+------------------+---------------------+------------------+------------------------+--------------+
+     * | magic-number: u4/32bit | encryption-type: u1/8bit  | iv-length: u1/8bit  | iv: uN/variable  | hid-length: u1/8bit | hardware-id: uX/36bit | file-id: u8/64bit | file data... |
+     * | Value: 0x19890225      | (e.g., encryption type)   | (length of IV)      | (IV value)       |                     | (e.g., 36 bits)       |                   |              |
+     * +------------------------+---------------------------+---------------------+------------------+---------------------+------------------+------------------------+--------------+
      *
-     * +----------------------------+---------------------------+---------------------+-------------------------+-------------------+----------------+
-     * | magic-number: u4/32bit     | encryption-type: u1/8bit  | hid-length: u1/8bit | hardware-id: uX/36bit   | file-id: u8/64bit | file data...   |
-     * | Value: 0x19890225          | (e.g., encryption type)   |                     | (e.g., 36 bits)         |                   |                |
-     * +----------------------------+---------------------------+---------------------+-------------------------+-------------------+----------------+
      *
      * @param context
-     * throws ParseException
+     * @throws ValidateException
+     * @throws OperationException
+     * @throws IOException
      */
-    private void parseHeader(EncryptContext context) throws ValidateException, EncryptException, IOException {
+    private void parseHeader(EncryptContext context) throws ValidateException, OperationException, IOException {
         if (Objects.isNull(context)) {
             throw new ValidateException("The context info is null");
         }
@@ -283,6 +289,9 @@ public abstract class AbstractOperationTemplate implements OperationStrategy {
 
         // 加密类型检测,如果是加密操作，则在魔术后写入u1/8bit加密类型
         checkEncryptType(context);
+
+        // IV向量操作
+        initVector(context);
 
         // 最高安全性的本地化处理,这里跟UUID有关
         onlyLocal(context);

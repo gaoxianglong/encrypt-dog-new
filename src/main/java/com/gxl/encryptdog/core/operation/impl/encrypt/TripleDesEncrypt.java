@@ -19,41 +19,25 @@
 package com.gxl.encryptdog.core.operation.impl.encrypt;
 
 import com.gxl.encryptdog.base.enums.ChannelEnum;
-import com.gxl.encryptdog.base.enums.EncryptTypeEnum;
 import com.gxl.encryptdog.base.error.EncryptException;
 import com.gxl.encryptdog.base.error.OperationException;
 import com.gxl.encryptdog.core.event.observer.ObServerContext;
 import com.gxl.encryptdog.core.operation.AbstractEncrypt;
-import com.gxl.encryptdog.utils.Utils;
+import com.gxl.encryptdog.core.operation.EncryptContext;
+import com.gxl.encryptdog.core.operation.type.TripleDes;
 
 import javax.crypto.Cipher;
-import javax.crypto.KeyGenerator;
-import javax.crypto.spec.SecretKeySpec;
+import javax.crypto.spec.IvParameterSpec;
 import java.security.SecureRandom;
 
 /**
- * TripleDes算法加密,安全性高
+ * TripleDes加密
  *
  * @author gxl
  * @version Id: 1.0.0
  * @since 2023/9/23 14:35
  */
-public class TripleDesEncrypt extends AbstractEncrypt {
-    /**
-     * 加密算法名称
-     */
-    private static final String ALGORITHM_TYPE          = EncryptTypeEnum.TRIPLE_DES.getAlgorithmType();
-
-    /**
-     * 加密算法名称/分组加密/分组填充
-     */
-    private static final String CIPHER_ALGORITHM        = String.format("%s/ECB/PKCS5Padding", ALGORITHM_TYPE);
-
-    /**
-     * SecureRandom使用SHA1PRNG加密算法
-     */
-    private static final String SECURE_RANDOM_ALGORITHM = "SHA1PRNG";
-
+public class TripleDesEncrypt extends AbstractEncrypt implements TripleDes {
     public TripleDesEncrypt(ObServerContext obServer) {
         super(obServer);
     }
@@ -62,19 +46,42 @@ public class TripleDesEncrypt extends AbstractEncrypt {
      * 数据加密操作
      * @param content
      * @param secretKey
+     * @param iv
      * @return
      * @throws EncryptException
      */
     @Override
-    public byte[] dataEncrypt(byte[] content, char[] secretKey) throws EncryptException {
+    public byte[] dataEncrypt(byte[] content, char[] secretKey, byte[] iv) throws EncryptException {
         try {
             var cipher = Cipher.getInstance(CIPHER_ALGORITHM);
-            cipher.init(Cipher.ENCRYPT_MODE, getGenerateKey(secretKey));
+            cipher.init(Cipher.ENCRYPT_MODE, getGenerateKey(secretKey), new IvParameterSpec(iv));
             // 执行数据加密
             return cipher.doFinal(content);
         } catch (Throwable e) {
             throw new EncryptException(e);
         }
+    }
+
+    /**
+     * 初始化向量IV
+     * @param encryptContext
+     * @throws OperationException
+     */
+    @Override
+    public void initVector(EncryptContext encryptContext) throws OperationException {
+        try {
+            // 生成64bit的随机IV
+            var iv = new byte[IV_LENGTH];
+            new SecureRandom().nextBytes(iv);
+
+            // 向加/解密领域模型中添加IV
+            encryptContext.getOperationVO().setIv(iv);
+        } catch (Throwable e) {
+            throw new EncryptException(e);
+        }
+
+        // 调用父类initVector函数向文件头中写入IV
+        super.initVector(encryptContext);
     }
 
     /**
@@ -84,26 +91,5 @@ public class TripleDesEncrypt extends AbstractEncrypt {
     @Override
     public ChannelEnum getChannel() {
         return ChannelEnum._3DES_ENCRYPT;
-    }
-
-    /**
-     * 返回秘钥器
-     * @param secretKey
-     * @return
-     * @throws EncryptException
-     */
-    private SecretKeySpec getGenerateKey(char[] secretKey) throws EncryptException {
-        try {
-            var secureRandom = SecureRandom.getInstance(SECURE_RANDOM_ALGORITHM);
-            secureRandom.setSeed(Utils.chars2Bytes(secretKey));
-            var kg = KeyGenerator.getInstance(ALGORITHM_TYPE);
-            kg.init(secureRandom);
-            var generateKey = kg.generateKey();
-
-            // 当秘钥不足192bit时会自动补全,超出则截取前192bit数据
-            return new SecretKeySpec(generateKey.getEncoded(), ALGORITHM_TYPE);
-        } catch (Throwable e) {
-            throw new EncryptException(e);
-        }
     }
 }

@@ -1,30 +1,26 @@
 package com.gxl.encryptdog.core.operation.impl.decrypt;
 
 import com.gxl.encryptdog.base.enums.ChannelEnum;
-import com.gxl.encryptdog.base.enums.EncryptTypeEnum;
 import com.gxl.encryptdog.base.error.DecryptException;
+import com.gxl.encryptdog.base.error.OperationException;
 import com.gxl.encryptdog.core.event.observer.ObServerContext;
 import com.gxl.encryptdog.core.operation.AbstractDecrypt;
+import com.gxl.encryptdog.core.operation.EncryptContext;
+import com.gxl.encryptdog.core.operation.type.Xor;
 import com.gxl.encryptdog.utils.Utils;
 
 /**
- * XOR算法解密
- * 在-d模式下,如果秘钥错误也能够正常进行异或运算,但是会损坏源文件,慎用
+ * XOR解密
  *
  * @author gxl
  * @version Id: 1.0.0
  * @since 2024/9/2 22:42
  */
-public class XorDecrypt extends AbstractDecrypt {
-    /**
-     * 加密算法名称
-     */
-    private static final String ALGORITHM_TYPE               = EncryptTypeEnum.XOR.getAlgorithmType();
-
+public class XorDecrypt extends AbstractDecrypt implements Xor {
     /**
      * 解密时缺省每次读取 10485760 bytes
      */
-    public static final int     DEFAULT_DECRYPT_CONTENT_SIZE = 0xa00000;
+    public static final int DEFAULT_DECRYPT_CONTENT_SIZE = 0xa00000;
 
     public XorDecrypt(ObServerContext obServer) {
         super(obServer);
@@ -34,11 +30,12 @@ public class XorDecrypt extends AbstractDecrypt {
      * 数据解密操作
      * @param content
      * @param secretKey
+     * @param iv
      * @return
      * @throws DecryptException
      */
     @Override
-    public byte[] dataDecrypt(byte[] content, char[] secretKey) throws DecryptException {
+    public byte[] dataDecrypt(byte[] content, char[] secretKey, byte[] iv) throws DecryptException {
         try {
             var rlt = new byte[content.length];
             // 将密钥转换为字节数组
@@ -51,6 +48,16 @@ public class XorDecrypt extends AbstractDecrypt {
         } catch (Throwable e) {
             throw new DecryptException(e);
         }
+    }
+
+    /**
+     * XOR算法不进行IV混淆
+     * @param encryptContext
+     * @throws OperationException
+     */
+    @Override
+    public void initVector(EncryptContext encryptContext) throws OperationException {
+        // 空重写
     }
 
     /**

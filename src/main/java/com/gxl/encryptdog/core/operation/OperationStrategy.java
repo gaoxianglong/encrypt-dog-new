@@ -88,6 +88,13 @@ public interface OperationStrategy {
     void bind(EncryptContext encryptContext) throws EncryptException;
 
     /**
+     * 初始化向量IV操作
+     * @param encryptContext
+     * @throws OperationException
+     */
+    void initVector(EncryptContext encryptContext) throws OperationException;
+
+    /**
      * 获取渠道
      * @return
      */

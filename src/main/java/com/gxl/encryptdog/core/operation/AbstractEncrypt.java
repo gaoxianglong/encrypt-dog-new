@@ -98,8 +98,34 @@ public abstract class AbstractEncrypt extends AbstractOperationTemplate {
         try {
             // 写入u1/8bit的加密类型
             out.write(Utils.int2Byte(encryptAlgorithm.getId()));
+            out.flush();
         } catch (Throwable e) {
             throw new EncryptAlgorithmException("Encrypt algorithm write failed", e);
+        }
+    }
+
+    /**
+     * 由具体的加密算法生成IV向量,这里在加密验证后追加u1/8bit向量长度和具体的向量值
+     * @param encryptContext
+     * @throws OperationException
+     */
+    @Override
+    public void initVector(EncryptContext encryptContext) throws OperationException {
+        // 获取文件句柄
+        var out = encryptContext.getOutputStream();
+        try {
+            // 获取IV
+            var iv = encryptContext.getOperationVO().getIv();
+            // 获取IV长度
+            var ivLength = iv.length;
+
+            // 写入u1/8bit的IV向量长度
+            out.write(Utils.int2Byte(ivLength));
+            // 写入具体向量值
+            out.write(iv, 0, ivLength);
+            out.flush();
+        } catch (Throwable e) {
+            throw new EncryptException("IV write failed", e);
         }
     }
 
@@ -123,6 +149,7 @@ public abstract class AbstractEncrypt extends AbstractOperationTemplate {
                 // 写入文件唯一id
                 out.write(Utils.long2Bytes(encryptContext.setFileId(idWorker.getId()).getFileId()));
             } else {
+                // 未开启OnlyLocal时写入一个空字节
                 out.write(new byte[1]);
             }
             out.flush();
@@ -163,7 +190,7 @@ public abstract class AbstractEncrypt extends AbstractOperationTemplate {
                     content = temp;
                 }
                 // 获取加密后的数据
-                var encryptData = dataEncrypt(content, encryptContext.getOperationVO().getSecretKey());
+                var encryptData = dataEncrypt(content, encryptContext.getOperationVO().getSecretKey(), encryptContext.getOperationVO().getIv());
                 out.write(encryptData, 0, encryptData.length);
                 out.flush();
 
@@ -216,10 +243,11 @@ public abstract class AbstractEncrypt extends AbstractOperationTemplate {
      * 数据加密操作
      * @param content
      * @param secretKey
+     * @param iv
      * @return
      * @throws EncryptException
      */
-    protected abstract byte[] dataEncrypt(byte[] content, char[] secretKey) throws EncryptException;
+    protected abstract byte[] dataEncrypt(byte[] content, char[] secretKey, byte[] iv) throws EncryptException;
 
     /**
      * 存储--only-local场景下的真实秘钥
@@ -240,7 +268,7 @@ public abstract class AbstractEncrypt extends AbstractOperationTemplate {
             // 真实秘钥
             var secretKey = new String(encryptContext.getOperationVO().getSecretKey());
             // 使用源秘钥加密真实秘钥
-            secretKey = new String(dataEncrypt(secretKey.getBytes(Charsets.UTF_8), sourceSecretKey), Charsets.UTF_8);
+            secretKey = new String(dataEncrypt(secretKey.getBytes(Charsets.UTF_8), sourceSecretKey, encryptContext.getOperationVO().getIv()), Charsets.UTF_8);
             // 固化加密后的真实秘钥
             properties.put(key, secretKey);
             properties.store(new BufferedOutputStream(new FileOutputStream(SECRET_KEY_FILE)), null);

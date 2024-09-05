@@ -1,25 +1,22 @@
 package com.gxl.encryptdog.core.operation.impl.encrypt;
 
 import com.gxl.encryptdog.base.enums.ChannelEnum;
-import com.gxl.encryptdog.base.enums.EncryptTypeEnum;
 import com.gxl.encryptdog.base.error.EncryptException;
+import com.gxl.encryptdog.base.error.OperationException;
 import com.gxl.encryptdog.core.event.observer.ObServerContext;
 import com.gxl.encryptdog.core.operation.AbstractEncrypt;
+import com.gxl.encryptdog.core.operation.EncryptContext;
+import com.gxl.encryptdog.core.operation.type.Xor;
 import com.gxl.encryptdog.utils.Utils;
 
 /**
- * XOR混淆,安全性低,正常情况下不建议使用
+ * XOR加密
  *
  * @author gxl
  * @version Id: 1.0.0
  * @since 2024/8/30 15:42
  */
-public class XorEncrypt extends AbstractEncrypt {
-    /**
-     * 加密算法名称
-     */
-    private static final String ALGORITHM_TYPE = EncryptTypeEnum.XOR.getAlgorithmType();
-
+public class XorEncrypt extends AbstractEncrypt implements Xor {
     public XorEncrypt(ObServerContext obServer) {
         super(obServer);
     }
@@ -28,11 +25,12 @@ public class XorEncrypt extends AbstractEncrypt {
      * 数据加密操作
      * @param content
      * @param secretKey
+     * @param iv
      * @return
      * @throws EncryptException
      */
     @Override
-    public byte[] dataEncrypt(byte[] content, char[] secretKey) throws EncryptException {
+    public byte[] dataEncrypt(byte[] content, char[] secretKey, byte[] iv) throws EncryptException {
         // 声明加密后的结果集
         var rlt = new byte[content.length];
         // 将密钥转换为字节数组
@@ -43,6 +41,16 @@ public class XorEncrypt extends AbstractEncrypt {
             rlt[i] = (byte) (content[i] ^ key[i % key.length]);
         }
         return rlt;
+    }
+
+    /**
+     * XOR算法不进行IV混淆
+     * @param encryptContext
+     * @throws OperationException
+     */
+    @Override
+    public void initVector(EncryptContext encryptContext) throws OperationException {
+        // 空重写
     }
 
     /**

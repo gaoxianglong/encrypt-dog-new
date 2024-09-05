@@ -52,6 +52,10 @@ public abstract class AbstractDecrypt extends AbstractOperationTemplate {
      */
     private static final int ENCRYPT_LENGTH_BYTES = 1;
     /**
+     * IV向量长度1bytes
+     */
+    private static final int IV_LENGTH_BYTES      = 1;
+    /**
      * 文件唯一id长度为64bit
      */
     private static final int FILE_ID_BYTES        = 8;
@@ -99,6 +103,31 @@ public abstract class AbstractDecrypt extends AbstractOperationTemplate {
         // 验证加密算法跟文件头的加密算法是否一致
         if (Utils._1byte2Int(encryptType) != encryptContext.getOperationVO().getEncryptAlgorithm().getId()) {
             throw new EncryptAlgorithmException("The algorithm used is not the encryption algorithm specified during encryption.");
+        }
+    }
+
+    /**
+     * 读取向量IV
+     * @param encryptContext
+     * @throws OperationException
+     */
+    @Override
+    public void initVector(EncryptContext encryptContext) throws OperationException {
+        // 获取文件句柄
+        var in = encryptContext.getInputStream();
+        var ivLength = new byte[IV_LENGTH_BYTES];
+        try {
+            in.read(ivLength);
+
+            // 读取向量值的长度
+            var length = Utils._1byte2Int(ivLength);
+            var iv = new byte[length];
+            // 读取IV向量值
+            in.read(iv);
+            // 设置iv到领域模型中
+            encryptContext.getOperationVO().setIv(iv);
+        } catch (Throwable e) {
+            throw new DecryptException("IV reading failed.", e);
         }
     }
 
@@ -161,7 +190,7 @@ public abstract class AbstractDecrypt extends AbstractOperationTemplate {
                     content = temp;
                 }
                 // 获取解密后的数据
-                var decryptData = dataDecrypt(content, encryptContext.getOperationVO().getSecretKey());
+                var decryptData = dataDecrypt(content, encryptContext.getOperationVO().getSecretKey(), encryptContext.getOperationVO().getIv());
                 out.write(decryptData, 0, decryptData.length);
                 out.flush();
 
@@ -218,7 +247,7 @@ public abstract class AbstractDecrypt extends AbstractOperationTemplate {
                 return;
             }
             // 使用原秘钥解密对应的随机秘钥
-            var sk = dataDecrypt(rsk.getBytes(Charsets.UTF_8), operationVO.getSecretKey());
+            var sk = dataDecrypt(rsk.getBytes(Charsets.UTF_8), operationVO.getSecretKey(), operationVO.getIv());
             operationVO.setSecretKey(new String(sk, Charsets.UTF_8).toCharArray());
         } catch (Throwable e) {
             throw new OperationException(e.getMessage(), e);
@@ -229,10 +258,11 @@ public abstract class AbstractDecrypt extends AbstractOperationTemplate {
      * 数据解密操作
      * @param content
      * @param secretKey
+     * @param iv
      * @return
      * @throws DecryptException
      */
-    protected abstract byte[] dataDecrypt(byte[] content, char[] secretKey) throws DecryptException;
+    protected abstract byte[] dataDecrypt(byte[] content, char[] secretKey, byte[] iv) throws DecryptException;
 
     /**
      * 构建EstimatedTimeEvent
