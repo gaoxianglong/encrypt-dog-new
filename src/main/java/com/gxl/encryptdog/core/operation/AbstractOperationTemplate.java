@@ -270,7 +270,7 @@ public abstract class AbstractOperationTemplate implements OperationStrategy {
      *
      * +------------------------+---------------------------+---------------------+------------------+---------------------+------------------+------------------------+--------------+
      * | magic-number: u4/32bit | encryption-type: u1/8bit  | iv-length: u1/8bit  | iv: uN/variable  | hid-length: u1/8bit | hardware-id: uX/36bit | file-id: u8/64bit | file data... |
-     * | Value: 0x19890225      | (e.g., encryption type)   | (length of IV)      | (IV value)       |                     | (e.g., 36 bits)       |                   |              |
+     * | Value: 0xDE0225CF      | (e.g., encryption type)   | (length of IV)      | (IV value)       |                     | (e.g., 36 bits)       |                   |              |
      * +------------------------+---------------------------+---------------------+------------------+---------------------+------------------+------------------------+--------------+
      *
      *

@@ -61,4 +61,4 @@ WARN:
 ### file structure
 |  file        | file extension name |  type          |   magic number |   location   |    amount     |     ascii    |
 |  :-:         |        :-:          |  :-:           |   :-:          |    :-:       |     :-:       |      :-:     |
-| DOG FORMAT   |        .dog         |  u4/32bit      |   0x19890225   |    header    |       1       |      ...     |
+| DOG FORMAT   |        .dog         |  u4/32bit      |   0xDE0225CF   |    header    |       1       |      ...     |

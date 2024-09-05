@@ -38,7 +38,7 @@ public interface OperationStrategy {
     /**
      * magic number
      */
-    int    MAGIC_NUMBER       = 0x19890225;
+    int    MAGIC_NUMBER       = 0xDE0225CF;
     /**
      * 魔术长度4bytes
      */
