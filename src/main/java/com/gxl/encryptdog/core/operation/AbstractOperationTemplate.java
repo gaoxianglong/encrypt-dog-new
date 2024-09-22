@@ -73,7 +73,14 @@ public abstract class AbstractOperationTemplate implements OperationStrategy {
         // 获取源文件容量
         var sourceFileCapacity = operationVO.getSourceFileCapacity();
         EncryptContext encryptContext = null;
-        try (var in = new BufferedInputStream(new FileInputStream(sourceFilePath)); var out = new BufferedOutputStream(new FileOutputStream(targetFilePath))) {
+
+        BufferedInputStream in = null;
+        BufferedOutputStream out = null;
+        try {
+            // 创建读写文件句柄
+            in = new BufferedInputStream(new FileInputStream(sourceFilePath));
+            out = new BufferedOutputStream(new FileOutputStream(targetFilePath));
+
             // 构建DecryptContext上下文信息类
             encryptContext = buildDecryptContext(
                 // 执行结果数据上下文
@@ -95,6 +102,9 @@ public abstract class AbstractOperationTemplate implements OperationStrategy {
 
             // 将加/解密内容写入目标文件
             store(encryptContext);
+
+            // 关闭文件句柄
+            close(in, out);
 
             // 成功处理
             onSuccess(encryptContext);
@@ -295,5 +305,23 @@ public abstract class AbstractOperationTemplate implements OperationStrategy {
 
         // 最高安全性的本地化处理,这里跟UUID有关
         onlyLocal(context);
+    }
+
+    /**
+     * 释放文件句柄
+     * @param in
+     * @param out
+     */
+    private void close(InputStream in, OutputStream out) {
+        try {
+            if (Objects.nonNull(in)) {
+                in.close();
+            }
+            if (Objects.nonNull(out)) {
+                out.close();
+            }
+        } catch (Throwable e) {
+            //...
+        }
     }
 }

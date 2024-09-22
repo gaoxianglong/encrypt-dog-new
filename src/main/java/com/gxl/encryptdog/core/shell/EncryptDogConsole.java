@@ -192,9 +192,9 @@ public class EncryptDogConsole extends ConsoleRequest implements Runnable {
      */
     private void validate() throws ValidateException {
         // 仅支持macos操作系统
-        if (!Utils.isMacOperatingSystem()) {
-            throw new ValidateException("Currently supporting the Mac operating system");
-        }
+//        if (!Utils.isMacOperatingSystem()) {
+//            throw new ValidateException("Currently supporting the Mac operating system");
+//        }
 
         // 参数校验
         ConsoleParamValidator.validate(getConsoleRequest());

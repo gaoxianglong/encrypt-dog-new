@@ -35,12 +35,14 @@ import java.io.InputStreamReader;
 public class SttyCommandImpl implements SttyCommand {
     @Override
     public int getWidth() throws CommandException {
-        return exec(1);
+//        return exec(1);
+        return 120;
     }
 
     @Override
     public int getHeight() throws CommandException {
-        return exec(0);
+//        return exec(0);
+        return 30;
     }
 
     /**
