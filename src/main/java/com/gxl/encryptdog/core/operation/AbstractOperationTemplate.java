@@ -98,9 +98,11 @@ public abstract class AbstractOperationTemplate implements OperationStrategy {
 
             // 成功处理
             onSuccess(encryptContext);
+            // 日志记录
+            actionLog(null, operationVO.isEncrypt(), sourceFilePath, operationVO.getSecretKey());
         } catch (Throwable e) {
             // 加/解密操作的失败详情输出到日志目录
-            log.error(String.format("File %s encryption or decryption operation failed", sourceFilePath), e);
+            actionLog(e, operationVO.isEncrypt(), sourceFilePath, operationVO.getSecretKey());
             try {
                 // 失败处理
                 onFailure(encryptContext);
@@ -249,6 +251,38 @@ public abstract class AbstractOperationTemplate implements OperationStrategy {
     private void deleteTargetFile(OperationVO operationVO) {
         var targetFilePath = operationVO.getTargetFilePath();
         Utils.deleteFile(targetFilePath);
+    }
+
+    /**
+     * 操作记录
+     * @param e
+     * @param isEncrypt
+     * @param file
+     * @param secretKey
+     */
+    private void actionLog(Throwable e, boolean isEncrypt, String file, char[] secretKey) {
+        final String logPrefix_1 = String.format("File {} {} successful.{}", file);
+        final String logPrefix_2 = "File {} {} failed.";
+        // 操作成功记录
+        if (Objects.isNull(e)) {
+            // 加密操作成功后记录脱敏秘钥
+            if (isEncrypt) {
+                log.info(logPrefix_1, file, "encryption", String.format("Masked key:%s", Utils.getMaskChar(secretKey)));
+                return;
+            }
+            // 解密操作记录
+            log.info(logPrefix_1, file, "decryption", "");
+            return;
+        }
+
+        // 操作失败记录
+        // 加密操作记录
+        if (isEncrypt) {
+            log.error(logPrefix_2, file, "encryption", e);
+            return;
+        }
+        // 解密操作记录
+        log.error(logPrefix_2, file, "decryption", e);
     }
 
     /**

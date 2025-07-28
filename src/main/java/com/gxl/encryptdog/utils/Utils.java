@@ -55,6 +55,23 @@ public class Utils {
     }
 
     /**
+     * 对原始秘钥进行脱敏
+     * @param secretKey 源秘钥
+     * @return
+     */
+    public static String getMaskChar(char[] secretKey) {
+        // 脱敏字符
+        final char MASK_CHAR = '*';
+        StringBuilder builder = new StringBuilder(new String(secretKey));
+
+        // 秘钥长度最低为6位长度，因此只保留首尾2个字符明文，其它全部用符号*进行脱敏
+        for (int i = 1; i < secretKey.length - 1; i++) {
+            builder.setCharAt(i, MASK_CHAR);
+        }
+        return builder.toString();
+    }
+
+    /**
      * 获取操作系统名称
      * @return
      */

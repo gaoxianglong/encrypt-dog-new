@@ -25,7 +25,7 @@ Welcome to
  / _// _ \/ __/ __/ // / _ \/ __/ / _ \/ _ \/ // / _ \/ _ `/
 /___/_//_/\__/_/  \_, / .__/\__/_/\___/_//_/____/\___/\_, /
                  /___/_/                             /___/
-	version: 2.0.2-RELEASE
+	version: 2.0.3-RELEASE
 
 Missing required options: '--secret-key', '--source-file=<source file>'
 Usage: encrypt-dog [-dehoV] -k [-k]... [-a=<encryptAlgorithm>] [-t=<storage

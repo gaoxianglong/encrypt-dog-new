@@ -110,6 +110,7 @@ public class ConsoleParamValidator {
             return;
         }
 
+        // System#console()#readPassword支持密码不回显，面向终端交互的高级API
         var newSecretKey = console.readPassword("Enter the secret-key again: ");
         if (Objects.isNull(newSecretKey) || !(Objects.equals(new String(request.getSecretKey()), new String(newSecretKey)))) {
             throw new ValidateException("The two secret-key do not match");
