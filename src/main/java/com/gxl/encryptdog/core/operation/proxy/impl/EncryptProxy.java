@@ -210,7 +210,7 @@ public class EncryptProxy implements Proxy {
                 channels.put(channel.getChannel(), channel);
             }
         } catch (Throwable e) {
-            e.printStackTrace();
+            log.error(e.getMessage(), e);
             //...
         }
     }

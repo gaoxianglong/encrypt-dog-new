@@ -5,8 +5,16 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>org.example</groupId>
     <artifactId>encrypt-dog-new</artifactId>
-    <version>2.0.3-RELEASE</version>
+    <version>3.0.0-RELEASE</version>
     <description>
+        3.0.0-RELEASE
+            1.文件头结构变更([Magic (4B)][HeaderLength (4B)][HeaderJson (N bytes)][Payload...]),提升后续扩展性; OK
+            2.加密时将固定盐值变更为随机盐值,增强其安全性; OK
+            3.扩展ChaCha20加密算法;OK
+            4.加/解密实现类冗余代码封装;OK
+            5.dashboard视图优化（RUNNING -> WAITING -> FINISHED）;
+            6.补充全量测试用例;
+
         2.0.3-RELEASE 增加加/解密操作的相关日志信息
         2.0.2-RELEASE 增加IV向量安全性
         2.0.1-RELEASE 性能优化和代码结构调整,同时扩展了AES和XOR加密算法
@@ -26,6 +34,7 @@
         <jlayer.version>1.0.1</jlayer.version>
         <slf4j.version>1.7.25</slf4j.version>
         <logback.version>1.2.3</logback.version>
+        <fastjson.version>2.0.54</fastjson.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
     <build>
@@ -148,6 +157,11 @@
             <groupId>ch.qos.logback</groupId>
             <artifactId>logback-classic</artifactId>
             <version>${logback.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.alibaba.fastjson2</groupId>
+            <artifactId>fastjson2</artifactId>
+            <version>${fastjson.version}</version>
         </dependency>
     </dependencies>
 </project>

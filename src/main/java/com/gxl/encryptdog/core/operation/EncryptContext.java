@@ -77,4 +77,8 @@ public class EncryptContext implements Serializable {
      * 写文件句柄
      */
     private BufferedOutputStream outputStream;
+    /**
+     * 文件头
+     */
+    private FileHeader           fileHeader;
 }

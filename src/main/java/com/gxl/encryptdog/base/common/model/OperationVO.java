@@ -80,9 +80,13 @@ public class OperationVO implements Serializable {
      */
     private long              sourceFileCapacity;
     /**
-     * 初始化向量
+     * IV向量
      */
     private byte[]            iv;
+    /**
+     * 随机盐值
+     */
+    private byte[]            salt;
 
     /**
      * 设置目标文件的全限定名
@@ -177,5 +181,9 @@ public class OperationVO implements Serializable {
 
     public void setIv(byte[] iv) {
         this.iv = iv;
+    }
+
+    public void setSalt(byte[] salt) {
+        this.salt = salt;
     }
 }

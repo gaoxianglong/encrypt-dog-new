@@ -18,7 +18,9 @@
 
 package com.gxl.encryptdog.core.operation;
 
+import com.alibaba.fastjson2.JSON;
 import com.google.common.base.Charsets;
+import com.gxl.encryptdog.base.common.model.OperationVO;
 import com.gxl.encryptdog.base.error.*;
 import com.gxl.encryptdog.core.event.EstimatedTimeEvent;
 import com.gxl.encryptdog.core.event.ProgressEvent;
@@ -29,7 +31,10 @@ import com.gxl.encryptdog.utils.Utils;
 import com.gxl.encryptdog.utils.uuid.IdWorker;
 import com.gxl.encryptdog.utils.uuid.impl.SnowflakeIdWorker;
 
+import javax.crypto.Cipher;
+import javax.crypto.spec.IvParameterSpec;
 import java.io.*;
+import java.security.SecureRandom;
 import java.util.Objects;
 import java.util.Properties;
 
@@ -62,99 +67,144 @@ public abstract class AbstractEncrypt extends AbstractOperationTemplate {
     }
 
     /**
-     * 魔术检查
+     * 加密操作往文件头写入魔术码
      *
      * @param encryptContext
-     * @throws MagicNumberException
+     * @throws MagicNumberParseException
      */
     @Override
-    public void checkMagicNumber(EncryptContext encryptContext) throws MagicNumberException {
+    public void parseMagicNumber(EncryptContext encryptContext) throws MagicNumberParseException {
+        // 获取文件句柄
         var out = encryptContext.getOutputStream();
+        // 将magic转为4bytes
         var magicNumber = Utils.int2Bytes(MAGIC_NUMBER);
         try {
             // 文件起始位写入u4/32bit魔术码
             out.write(magicNumber, 0, magicNumber.length);
             out.flush();
         } catch (Throwable e) {
-            throw new MagicNumberException("Magic write failed", e);
+            throw new MagicNumberParseException("Magic write failed", e);
         }
     }
 
     /**
-     * 加密类型验证,这里主要是在魔术后追加u1/8bit的加密类型
+     * 将加密算法类型、IV向量、Salt等信息记录到FileHeader中
+     *
      * @param encryptContext
-     * @throws ValidateException
+     * @throws HeaderParseException
+     * @throws OperationException
      */
     @Override
-    public void checkEncryptType(EncryptContext encryptContext) throws ValidateException, EncryptAlgorithmException {
-        // 获得文件句柄
-        var out = encryptContext.getOutputStream();
+    public void parseHeader(EncryptContext encryptContext) throws HeaderParseException, OperationException {
+        encryptContext.setFileHeader(new FileHeader());
 
-        // 获取加密算法类型
-        var encryptAlgorithm = encryptContext.getOperationVO().getEncryptAlgorithm();
-        if (Objects.isNull(encryptAlgorithm)) {
-            throw new ValidateException("You cannot use a non-existent encryption algorithm.");
-        }
-        try {
-            // 写入u1/8bit的加密类型
-            out.write(Utils.int2Byte(encryptAlgorithm.getId()));
-            out.flush();
-        } catch (Throwable e) {
-            throw new EncryptAlgorithmException("Encrypt algorithm write failed", e);
-        }
+        // 写入加密算法类型
+        parseEncryptType(encryptContext);
+
+        // 写入IV向量
+        parseVector(encryptContext);
+
+        // 写入16bytes随机盐值
+        parseSalt(encryptContext);
     }
 
     /**
-     * 由具体的加密算法生成IV向量,这里在加密验证后追加u1/8bit向量长度和具体的向量值
+     * 生成16bytes随机盐值
+     * @param encryptContext
+     * @throws HeaderParseException
+     */
+    @Override
+    public void parseSalt(EncryptContext encryptContext) throws HeaderParseException {
+        byte[] salt = new byte[SALT_LENGTH_BYTES];
+        SecureRandom random = new SecureRandom();
+        // 生成随机盐值
+        random.nextBytes(salt);
+
+        // 将salt记录到领域模型中 
+        encryptContext.getOperationVO().setSalt(salt);
+
+        // 将salt进行Base64编码后设置到文件头中,以便于后续写入到加密文件头中
+        encryptContext.getFileHeader().setSalt(Utils.toBase64Encode(salt));
+    }
+
+    /**
+     * 文件头中指定其加密类型
+     *
+     * @param context
+     * @throws HeaderParseException
+     */
+    @Override
+    public void parseEncryptType(EncryptContext context) throws HeaderParseException {
+        // 获取加密算法类型
+        var encryptAlgorithm = context.getOperationVO().getEncryptAlgorithm();
+        if (Objects.isNull(encryptAlgorithm)) {
+            throw new HeaderParseException("You cannot use a non-existent encryption algorithm.");
+        }
+        context.getFileHeader().setEncryptTypeId(encryptAlgorithm.getId());
+    }
+
+    /**
+     * 由具体的加密算法生成IV向量
      * @param encryptContext
      * @throws OperationException
      */
     @Override
-    public void initVector(EncryptContext encryptContext) throws OperationException {
-        // 获取文件句柄
-        var out = encryptContext.getOutputStream();
+    public void parseVector(EncryptContext encryptContext) throws HeaderParseException, OperationException {
+        var iv = encryptContext.getOperationVO().getIv();
         try {
-            // 获取IV
-            var iv = encryptContext.getOperationVO().getIv();
-            // 获取IV长度
-            var ivLength = iv.length;
-
-            // 写入u1/8bit的IV向量长度
-            out.write(Utils.int2Byte(ivLength));
-            // 写入具体向量值
-            out.write(iv, 0, ivLength);
-            out.flush();
+            // 将IV向量进行Base64编码后写入FileHeader
+            encryptContext.getFileHeader().setIv(Utils.toBase64Encode(iv));
         } catch (Throwable e) {
-            throw new EncryptException("IV write failed", e);
+            throw new OperationException("IV writing failed.", e);
         }
     }
 
     /**
      * 是否仅限在相同的物理设备上完成加/解密操作
      *
-     * @param encryptContext
-     * @throws EncryptException
+     * @param context
+     * @throws OperationException
      */
     @Override
-    public void bind(EncryptContext encryptContext) throws EncryptException {
+    public void bind(EncryptContext context) throws OperationException {
+        if (!context.getOperationVO().isOnlyLocal()) {
+            return;
+        }
+        try {
+            // 获取物理设备id
+            var hardwareId = getHardwareId();
+            var headerFile = context.getFileHeader();
+            headerFile.setOnlyLocal(true);
+            headerFile.setHardwareId(hardwareId);
+            headerFile.setFileId(Utils.long2Bytes(context.setFileId(idWorker.getId()).getFileId()));
+        } catch (Throwable e) {
+            throw new OperationException("Failed to bind the device", e);
+        }
+    }
+
+    /**
+     * 保存文件头
+     * 
+     * @param encryptContext
+     * @throws HeaderParseException
+     */
+    @Override
+    public void saveFileHeader(EncryptContext encryptContext) throws HeaderParseException {
+        // 获取文件句柄
         var out = encryptContext.getOutputStream();
         try {
-            if (encryptContext.getOperationVO().isOnlyLocal()) {
-                // 获取物理设备id
-                var hardwareId = getHardwareId();
-                // 写入u1/8bit的hardwareId长度
-                out.write(Utils.int2Byte(hardwareId.length));
-                // 写入物理设备id
-                out.write(hardwareId, 0, hardwareId.length);
-                // 写入文件唯一id
-                out.write(Utils.long2Bytes(encryptContext.setFileId(idWorker.getId()).getFileId()));
-            } else {
-                // 未开启OnlyLocal时写入一个空字节
-                out.write(new byte[1]);
-            }
+            // 将文件头对象进行序列化
+            var header = Utils.str2Bytes(JSON.toJSONString(encryptContext.getFileHeader()));
+            var headerSize = Utils.int2Bytes(header.length);
+
+            // 写入文件头大小
+            out.write(headerSize);
+
+            // 写入文件头信息
+            out.write(header);
             out.flush();
         } catch (Throwable e) {
-            throw new EncryptException("Device binding failed", e);
+            throw new HeaderParseException("File header write failed", e);
         }
     }
 
@@ -189,8 +239,10 @@ public abstract class AbstractEncrypt extends AbstractOperationTemplate {
                     System.arraycopy(content, 0, temp, 0, len);
                     content = temp;
                 }
+
+                OperationVO operationVO = encryptContext.getOperationVO();
                 // 获取加密后的数据
-                var encryptData = dataEncrypt(content, encryptContext.getOperationVO().getSecretKey(), encryptContext.getOperationVO().getIv());
+                var encryptData = dataEncrypt(content, operationVO.getSecretKey(), operationVO.getIv(), operationVO.getSalt());
                 out.write(encryptData, 0, encryptData.length);
                 out.flush();
 
@@ -244,10 +296,54 @@ public abstract class AbstractEncrypt extends AbstractOperationTemplate {
      * @param content
      * @param secretKey
      * @param iv
+     * @param salt
      * @return
      * @throws EncryptException
      */
-    protected abstract byte[] dataEncrypt(byte[] content, char[] secretKey, byte[] iv) throws EncryptException;
+    protected abstract byte[] dataEncrypt(byte[] content, char[] secretKey, byte[] iv, byte[] salt) throws EncryptException;
+
+    /**
+     * 数据加密操作
+     * @param content
+     * @param secretKey
+     * @param iv
+     * @param salt
+     * @return
+     * @throws EncryptException
+     */
+    protected byte[] dataEncrypt(byte[] content, char[] secretKey, byte[] iv, byte[] salt, String cipherAlgorithm) throws EncryptException {
+        try {
+            // 获取PBKDF2增强的秘钥
+            var key = getGenerateKey(secretKey, salt);
+            var cipher = Cipher.getInstance(cipherAlgorithm);
+            cipher.init(Cipher.ENCRYPT_MODE, key, new IvParameterSpec(iv));
+
+            // 执行数据加密
+            return cipher.doFinal(content);
+        } catch (Throwable e) {
+            throw new EncryptException(e);
+        }
+    }
+
+    /**
+     * 生成随机IV向量,不同的算法IV向量长度存在差异
+     * 
+     * @param ivLength
+     * @param encryptContext
+     * @throws OperationException
+     */
+    protected void createVector(int ivLength, EncryptContext encryptContext) throws OperationException {
+        try {
+            // 生成随机IV
+            var iv = new byte[ivLength];
+            new SecureRandom().nextBytes(iv);
+
+            // 向加/解密领域模型中添加IV
+            encryptContext.getOperationVO().setIv(iv);
+        } catch (Throwable e) {
+            throw new OperationException("IV generation failed.", e);
+        }
+    }
 
     /**
      * 存储--only-local场景下的真实秘钥
@@ -268,7 +364,9 @@ public abstract class AbstractEncrypt extends AbstractOperationTemplate {
             // 真实秘钥
             var secretKey = new String(encryptContext.getOperationVO().getSecretKey());
             // 使用源秘钥加密真实秘钥
-            secretKey = new String(dataEncrypt(secretKey.getBytes(Charsets.UTF_8), sourceSecretKey, encryptContext.getOperationVO().getIv()), Charsets.UTF_8);
+            secretKey = new String(
+                dataEncrypt(secretKey.getBytes(Charsets.UTF_8), sourceSecretKey, encryptContext.getOperationVO().getIv(), encryptContext.getOperationVO().getSalt()),
+                Charsets.UTF_8);
             // 固化加密后的真实秘钥
             properties.put(key, secretKey);
             properties.store(new BufferedOutputStream(new FileOutputStream(SECRET_KEY_FILE)), null);

@@ -35,24 +35,23 @@ public class ResultComparator implements Comparator<DashboardViewState> {
     public int compare(DashboardViewState o1, DashboardViewState o2) {
         var s1 = o1.getState();
         var s2 = o2.getState();
+        return Integer.compare(getPriority(s1), getPriority(s2));
+    }
 
-        // RUNNING排在WAITING前面
-        if (s1 == EncryptStateEnum.RUNNING && s2 == EncryptStateEnum.WAITING) {
-            return -1;
-        }
-        // WAITING排在RUNNING后面
-        else if (s1 == EncryptStateEnum.WAITING && s2 == EncryptStateEnum.RUNNING) {
-            return 1;
-        }
-        // RUNNING排在FINISHED前面
-        else if (s1 == EncryptStateEnum.RUNNING && s2 == EncryptStateEnum.FINISHED) {
-            return -1;
-        }
-        // FINISHED排在RUNNING后面
-        else if (s1 == EncryptStateEnum.FINISHED && s2 == EncryptStateEnum.RUNNING) {
-            return 1;
-        }
-        // 其他情况按字母顺序排序
-        return s1.getState().compareTo(s2.getState());
+    /**
+     * 排序权重优先级
+     * @param state
+     * @return
+     */
+    private int getPriority(EncryptStateEnum state) {
+        // 排序优先级RUNNING -> WAITING -> FINISHED -> 其他状态
+        return switch (state) {
+            case RUNNING -> 0;
+            case WAITING -> 1;
+            case FINISHED -> 2;
+
+            // 其他状态排在最后
+            default -> 3;
+        };
     }
 }

@@ -27,31 +27,31 @@ import java.io.Serial;
  * @version Id: 1.0.0
  * @since 2023/10/8 13:50
  */
-public class MagicNumberException extends EncryptException {
+public class MagicNumberParseException extends HeaderParseException {
     @Serial
     private static final long serialVersionUID = -5943824004709021683L;
 
-    public MagicNumberException(String sourceFile, String message) {
+    public MagicNumberParseException(String sourceFile, String message) {
         super(sourceFile, message);
     }
 
-    public MagicNumberException(String message) {
+    public MagicNumberParseException(String message) {
         super(message);
     }
 
-    public MagicNumberException(String message, Throwable cause) {
+    public MagicNumberParseException(String message, Throwable cause) {
         super(message, cause);
     }
 
-    public MagicNumberException(String sourceFile, String message, Throwable cause) {
+    public MagicNumberParseException(String sourceFile, String message, Throwable cause) {
         super(sourceFile, message, cause);
     }
 
-    public MagicNumberException(Throwable cause) {
+    public MagicNumberParseException(Throwable cause) {
         super(cause);
     }
 
-    public MagicNumberException(String message, Throwable cause, boolean enableSuppression, boolean writableStackTrace) {
+    public MagicNumberParseException(String message, Throwable cause, boolean enableSuppression, boolean writableStackTrace) {
         super(message, cause, enableSuppression, writableStackTrace);
     }
 }

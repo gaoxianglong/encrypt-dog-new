@@ -31,6 +31,9 @@ import com.gxl.encryptdog.utils.Utils;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
+import javax.crypto.SecretKeyFactory;
+import javax.crypto.spec.PBEKeySpec;
+import javax.crypto.spec.SecretKeySpec;
 import java.io.*;
 import java.util.Objects;
 
@@ -91,7 +94,7 @@ public abstract class AbstractOperationTemplate implements OperationStrategy {
             processState.setState(encryptContext, EncryptStateEnum.RUNNING);
 
             // 解析文件头信息
-            parseHeader(encryptContext);
+            parse(encryptContext);
 
             // 将加/解密内容写入目标文件
             store(encryptContext);
@@ -149,7 +152,17 @@ public abstract class AbstractOperationTemplate implements OperationStrategy {
     }
 
     @Override
-    public void checkMagicNumber(EncryptContext encryptContext) throws MagicNumberException {
+    public void parseSalt(EncryptContext encryptContext) throws HeaderParseException {
+
+    }
+
+    @Override
+    public void parseMagicNumber(EncryptContext encryptContext) throws MagicNumberParseException {
+
+    }
+
+    @Override
+    public void parseHeader(EncryptContext context) throws HeaderParseException, OperationException {
 
     }
 
@@ -159,7 +172,7 @@ public abstract class AbstractOperationTemplate implements OperationStrategy {
     }
 
     @Override
-    public void bind(EncryptContext encryptContext) throws EncryptException {
+    public void bind(EncryptContext encryptContext) throws OperationException {
 
     }
 
@@ -169,7 +182,7 @@ public abstract class AbstractOperationTemplate implements OperationStrategy {
     }
 
     @Override
-    public void initVector(EncryptContext encryptContext) throws OperationException {
+    public void parseVector(EncryptContext encryptContext) throws HeaderParseException, OperationException {
 
     }
 
@@ -179,14 +192,25 @@ public abstract class AbstractOperationTemplate implements OperationStrategy {
     }
 
     /**
-     * 加密类型检查
-     * @param encryptContext
-     * @throws ValidateException
-     * @throws EncryptAlgorithmException
+     * 解析加密算法跟文件头的加密算法是否一致
+     * 加密操作:文件头中指定其加密类型;
+     * 解密操作:验证加密算法跟文件头的加密算法是否一致
+     *
+     * @param context
+     * @throws HeaderParseException
      */
     @Override
-    public void checkEncryptType(EncryptContext encryptContext) throws ValidateException, EncryptAlgorithmException {
+    public void parseEncryptType(EncryptContext context) throws HeaderParseException {
 
+    }
+
+    /**
+     * 向文件头写入头信息
+     * @param encryptContext
+     * @throws HeaderParseException
+     */
+    @Override
+    public void saveFileHeader(EncryptContext encryptContext) throws HeaderParseException {
     }
 
     /**
@@ -200,6 +224,38 @@ public abstract class AbstractOperationTemplate implements OperationStrategy {
         var newTimeConsuming = (double) timeConsuming / 1000;
         var num = encryptContext.getSourceFileCapacity() / encryptContext.getDefaultCapacity();
         return Utils.currentTimeFormat((long) ((num < 1 ? 1 : num) * newTimeConsuming));
+    }
+
+    /**
+     * 获取PBKDF2增强的秘钥
+     * @param secretKey
+     * @param salt
+     * @return
+     * @throws OperationException
+     */
+    protected abstract SecretKeySpec getGenerateKey(char[] secretKey, byte[] salt) throws OperationException;
+
+    /**
+     * 获取PBKDF2增强的秘钥
+     * @param secretKey         用户明文密码
+     * @param salt              盐值
+     * @param keyDerivation     基于PBKDF2算法使用密码派生函数
+     * @param iterationCount    PBKDF2的迭代次数
+     * @param keyLength         密钥长度
+     * @param algorithmName     算法名称
+     * @return
+     * @throws OperationException
+     */
+    protected SecretKeySpec getGenerateKey(char[] secretKey, byte[] salt, String keyDerivation, int iterationCount, int keyLength, String algorithmName) throws OperationException {
+        try {
+            // 基于PBKDF2算法使用密码派生函数
+            var factory = SecretKeyFactory.getInstance(keyDerivation);
+            var spec = new PBEKeySpec(secretKey, salt, iterationCount, keyLength);
+            // 返回秘钥key
+            return new SecretKeySpec(factory.generateSecret(spec).getEncoded(), algorithmName);
+        } catch (Throwable e) {
+            throw new OperationException(e);
+        }
     }
 
     /**
@@ -289,45 +345,43 @@ public abstract class AbstractOperationTemplate implements OperationStrategy {
      * 最高安全性的本地化处理
      *
      * @param encryptContext
-     * @throws EncryptException
-     * @throws IOException
+     * @throws OperationException
      */
-    private void onlyLocal(EncryptContext encryptContext) throws EncryptException, IOException {
+    private void onlyLocal(EncryptContext encryptContext) throws OperationException {
         // 最高安全性-目标文件的文件头绑定物理设备id和fileid
         bind(encryptContext);
-        // 最高安全性-创建随机秘钥文件
-        createSecretkeyFile();
+
+        try {
+            // 最高安全性-创建随机秘钥文件
+            createSecretkeyFile();
+        } catch (IOException e) {
+            throw new OperationException(e);
+        }
     }
 
     /**
      * 解析文件头
-     *
-     * +------------------------+---------------------------+---------------------+------------------+---------------------+------------------+------------------------+--------------+
-     * | magic-number: u4/32bit | encryption-type: u1/8bit  | iv-length: u1/8bit  | iv: uN/variable  | hid-length: u1/8bit | hardware-id: uX/36bit | file-id: u8/64bit | file data... |
-     * | Value: 0xDE0225CF      | (e.g., encryption type)   | (length of IV)      | (IV value)       |                     | (e.g., 36 bits)       |                   |              |
-     * +------------------------+---------------------------+---------------------+------------------+---------------------+------------------+------------------------+--------------+
-     *
+     *[Magic (4B)][HeaderLength (4B)][HeaderJson (N bytes)][Payload...]
      *
      * @param context
-     * @throws ValidateException
+     * @throws ParseException
      * @throws OperationException
-     * @throws IOException
      */
-    private void parseHeader(EncryptContext context) throws ValidateException, OperationException, IOException {
+    private void parse(EncryptContext context) throws ParseException, OperationException {
         if (Objects.isNull(context)) {
-            throw new ValidateException("The context info is null");
+            throw new ParseException("The context info is null");
         }
 
         // 魔术检测,如果是加密操作,则在文件起始位写入u4/32bit魔术码
-        checkMagicNumber(context);
+        parseMagicNumber(context);
 
-        // 加密类型检测,如果是加密操作，则在魔术后写入u1/8bit加密类型
-        checkEncryptType(context);
+        // 解析文件头
+        parseHeader(context);
 
-        // IV向量操作
-        initVector(context);
-
-        // 最高安全性的本地化处理,这里跟UUID有关
+        // 最高安全性操作
         onlyLocal(context);
+
+        // 保存文件头信息
+        saveFileHeader(context);
     }
 }

@@ -270,10 +270,29 @@ public class Utils {
      *
      * @param s
      * @return
-     * @throws UnsupportedEncodingException
      */
-    public static String toBase64Encode(byte[] s) throws UnsupportedEncodingException {
+    public static String toBase64Encode(byte[] s) {
         return Base64.getEncoder().encodeToString(s);
+    }
+
+    /**
+     * base64解密
+     *
+     * @param s
+     * @return
+     */
+    public static byte[] toBase64Decode(byte[] s) {
+        return Base64.getDecoder().decode(s);
+    }
+
+    /**
+     * base64解密
+     *
+     * @param s
+     * @return
+     */
+    public static byte[] toBase64Decode(String s) {
+        return Base64.getDecoder().decode(s);
     }
 
     /**
@@ -361,16 +380,6 @@ public class Utils {
     }
 
     /**
-     * base64解密
-     *
-     * @param s
-     * @return
-     */
-    public static byte[] toBase64Decode(byte[] s) {
-        return Base64.getDecoder().decode(s);
-    }
-
-    /**
      * 字节数组转long
      *
      * @param bytes
@@ -392,5 +401,23 @@ public class Utils {
         if (sourceFile.exists()) {
             sourceFile.delete();
         }
+    }
+
+    /**
+     * bytes转String
+     * @param bytes
+     * @return
+     */
+    public static String bytes2Str(byte[] bytes) {
+        return new String(bytes, Charsets.UTF_8);
+    }
+
+    /**
+     * String转bytes
+     * @param content
+     * @return
+     */
+    public static byte[] str2Bytes(String content) {
+        return content.getBytes(Charsets.UTF_8);
     }
 }

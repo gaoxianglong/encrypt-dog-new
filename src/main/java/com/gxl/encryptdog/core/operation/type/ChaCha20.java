@@ -20,37 +20,46 @@ package com.gxl.encryptdog.core.operation.type;
 import com.gxl.encryptdog.base.enums.EncryptTypeEnum;
 
 /**
- * AES-256算法加密标记接口
+ * ChaCha20算法加密标记接口
  *
  * @author gxl
  * @version Id: 1.0.0
- * @since 2024/9/4 15:24
+ * @since 2025/7/29 15:34
  */
-public interface Aes {
+public interface ChaCha20 {
     /**
      * 加密算法名称
      */
-    String ALGORITHM_NAME   = EncryptTypeEnum.AES.getAlgorithmName();
+    String ALGORITHM_NAME     = EncryptTypeEnum.CHACHA20.getAlgorithmName();
 
     /**
-     * 加密算法名称/分组加密/分组填充
+     * AES和3DES是分组加密算法，需要加密模式(CBC)+填充(PKCS5Padding)
+     * ChaCha20是流加密算法，不分组、不需要填充，因此不需要额外指定模式和填充方式
      */
-    String CIPHER_ALGORITHM = String.format("%s/CBC/PKCS5Padding", ALGORITHM_NAME);
+    String CIPHER_ALGORITHM   = ALGORITHM_NAME;
 
     /**
      * 基于PBKDF2算法使用密码派生函数
      */
-    String KEY_DERIVATION   = "PBKDF2WithHmacSHA256";
+    String KEY_DERIVATION     = "PBKDF2WithHmacSHA256";
+
     /**
-     * 向量长度
+     * chacha20要求IV向量的长度必须是12bytes(96bit)
+     * The nonce is exactly 96 bits (12 bytes) long.
      */
-    int    IV_LENGTH        = 16;
+    int    IV_LENGTH          = 12;
+
     /**
      * 密钥长度256bit
      */
-    int    KEY_LENGTH       = 256;
+    int    KEY_LENGTH         = 256;
+
     /**
      * PBKDF2的迭代次数
      */
-    int    ITERATION_COUNT  = 100_000;
+    int    ITERATION_COUNT    = 100_000;
+    /**
+     * ChaCha20-Poly1305的认证标签长度
+     */
+    int    AUTHENTICATION_TAG = 128;
 }

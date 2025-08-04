@@ -32,36 +32,47 @@ public enum EncryptTypeEnum {
                              /**
                               * 3DES对称加密算法
                               */
-                             TRIPLE_DES(0, "DESede", "3DES对称加密算法"),
+                             TRIPLE_DES(0, "3DES", "DESede", "3DES对称加密算法"),
 
                              /**
                               * XOR异或加密算法,主要是做混淆,使用请注意
                               */
-                             XOR(1, "XOR", "XOR异或加密算法"),
+                             XOR(1, "XOR", "XOR", "XOR异或加密算法"),
 
                              /**
-                              * AES对称加密算法,安全性高,速度快(约DESede的5倍)
+                              * AES对称加密算法,安全性高,速度快(约DESede的5倍),加解密时默认的算法
                               */
-                             AES(2, "AES", "AES256对称加密算法");
+                             AES(2, "AES", "AES", "AES256对称加密算法"),
+
+                             /**
+                              * CHACHA20对称加密算法
+                              * 在 ARM 架构下（尤其是没有 AES 硬件加速的设备），ChaCha20 通常比 AES 更快，两者安全性相当；
+                              */
+                             CHACHA20(3, "CHACHA20", "ChaCha20-Poly1305", "CHACHA20对称加密算法");
 
     private int    id;
     /**
-     * 算法名称
+     * 算法类型
      */
     private String algorithmType;
+    /**
+     * 算法名称,主要是设置Cipher.getInstance时使用
+     */
+    private String algorithmName;
     /**
      * 描述信息
      */
     private String desc;
 
-    EncryptTypeEnum(int id, String algorithmType, String desc) {
+    EncryptTypeEnum(int id, String algorithmType, String algorithmName, String desc) {
         this.id = id;
         this.algorithmType = algorithmType;
+        this.algorithmName = algorithmName;
         this.desc = desc;
     }
 
     /**
-     * 算法名称验证
+     * 算法类型验证
      * @param name
      * @return
      */

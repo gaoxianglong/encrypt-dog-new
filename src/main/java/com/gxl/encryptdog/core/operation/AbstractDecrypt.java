@@ -18,20 +18,22 @@
 
 package com.gxl.encryptdog.core.operation;
 
+import com.alibaba.fastjson2.JSONObject;
 import com.google.common.base.Charsets;
 import com.gxl.encryptdog.base.common.model.OperationVO;
-import com.gxl.encryptdog.base.enums.ExecResultEnum;
 import com.gxl.encryptdog.base.error.*;
 import com.gxl.encryptdog.core.event.EstimatedTimeEvent;
 import com.gxl.encryptdog.core.event.ProgressEvent;
-import com.gxl.encryptdog.core.event.ResultEvent;
 import com.gxl.encryptdog.core.event.observer.ObServerContext;
 import com.gxl.encryptdog.core.shell.command.HardwareCommand;
 import com.gxl.encryptdog.core.shell.command.impl.HardwareCommandImpl;
 import com.gxl.encryptdog.utils.Utils;
 
+import javax.crypto.Cipher;
+import javax.crypto.spec.IvParameterSpec;
 import java.io.BufferedInputStream;
 import java.io.FileInputStream;
+import java.io.IOException;
 import java.util.Objects;
 import java.util.Properties;
 
@@ -44,123 +46,154 @@ import java.util.Properties;
  */
 public abstract class AbstractDecrypt extends AbstractOperationTemplate {
     /**
-     * UUID长度1bytes
-     */
-    private static final int UUID_BYTES           = 1;
-    /**
-     * 加密类型长度1bytes
-     */
-    private static final int ENCRYPT_LENGTH_BYTES = 1;
-    /**
-     * IV向量长度1bytes
-     */
-    private static final int IV_LENGTH_BYTES      = 1;
-    /**
-     * 文件唯一id长度为64bit
-     */
-    private static final int FILE_ID_BYTES        = 8;
-    protected Long           fileId;
-    /**
      * 获取设备唯一标识命令接口
      */
-    private HardwareCommand  command              = new HardwareCommandImpl();
+    private HardwareCommand command = new HardwareCommandImpl();
 
     public AbstractDecrypt(ObServerContext obServer) {
         super(obServer);
     }
 
+    /**
+     * 解密操作进行魔术检查
+     * @param encryptContext
+     * @throws MagicNumberParseException
+     */
     @Override
-    public void checkMagicNumber(EncryptContext encryptContext) throws MagicNumberException {
+    public void parseMagicNumber(EncryptContext encryptContext) throws MagicNumberParseException {
+        // 获取文件句柄
         var in = encryptContext.getInputStream();
         var magicNumber = new byte[MAGIC_NUMBER_BYTES];
         try {
             in.read(magicNumber);
-        } catch (Throwable e) {
-            throw new MagicNumberException(e.getMessage(), e);
+        } catch (IOException e) {
+            throw new MagicNumberParseException("Magic read failed.", e);
         }
         // 魔术判断
         if (Utils._4bytes2Int(magicNumber) != MAGIC_NUMBER) {
-            throw new MagicNumberException("Bad magic number");
+            throw new MagicNumberParseException("Bad magic number.");
         }
     }
 
     /**
-     * 加密类型验证
+     * 解析文件头中的加密算法、IV向量、Salt、Version等信息进行验证
+     * 
      * @param encryptContext
-     * @throws ValidateException
-     * @throws EncryptAlgorithmException
+     * @throws HeaderParseException
+     * @throws OperationException
      */
     @Override
-    public void checkEncryptType(EncryptContext encryptContext) throws ValidateException, EncryptAlgorithmException {
+    public void parseHeader(EncryptContext encryptContext) throws HeaderParseException, OperationException {
         // 获取文件句柄
         var in = encryptContext.getInputStream();
-        var encryptType = new byte[ENCRYPT_LENGTH_BYTES];
+        var headerSize = new byte[HEADER_LENGTH_BYTES];
         try {
-            in.read(encryptType);
+            // 解析文件头长度
+            in.read(headerSize);
+            var header = new byte[Utils._4bytes2Int(headerSize)];
+
+            // 解析文件头
+            in.read(header);
+
+            // 将文件头反序列化
+            FileHeader fileHeader = JSONObject.parseObject(Utils.bytes2Str(header), FileHeader.class);
+
+            // 将FileHeader设置到上下文中
+            encryptContext.setFileHeader(fileHeader);
+
+            // 1.验证加密算法跟文件头的加密算法是否一致
+            parseEncryptType(encryptContext);
+
+            // 2.获取IV向量
+            parseVector(encryptContext);
+
+            // 3.获取Salt
+            parseSalt(encryptContext);
         } catch (Throwable e) {
-            throw new EncryptAlgorithmException(e.getMessage(), e);
+            throw new HeaderParseException("Failed to parse file header.", e);
         }
+    }
+
+    /**
+     * 初始化盐值
+     * @param encryptContext
+     * @throws HeaderParseException
+     */
+    @Override
+    public void parseSalt(EncryptContext encryptContext) throws HeaderParseException {
+        var fileHeader = encryptContext.getFileHeader();
+        var salt = fileHeader.getSalt();
+        if (Objects.isNull(salt) || salt.isBlank()) {
+            throw new HeaderParseException("File header integrity compromised; Salt is missing.");
+        }
+        // 将salt进行Base64解码后写入到领域模型中
+        encryptContext.getOperationVO().setSalt(Utils.toBase64Decode(salt));
+    }
+
+    /**
+     * 验证加密算法跟文件头的加密算法是否一致
+     * 
+     * @param encryptContext
+     * @throws HeaderParseException
+     */
+    @Override
+    public void parseEncryptType(EncryptContext encryptContext) throws HeaderParseException {
+        // 获取加解密领域模型
+        var operationVO = encryptContext.getOperationVO();
+        // 获取文件头
+        var fileHeader = encryptContext.getFileHeader();
+
         // 验证加密算法跟文件头的加密算法是否一致
-        if (Utils._1byte2Int(encryptType) != encryptContext.getOperationVO().getEncryptAlgorithm().getId()) {
-            throw new EncryptAlgorithmException("The encryption and decryption algorithms are inconsistent.");
+        if (operationVO.getEncryptAlgorithm().getId() != fileHeader.getEncryptTypeId()) {
+            throw new HeaderParseException("The encryption and decryption algorithms are inconsistent.");
         }
     }
 
     /**
      * 读取向量IV
+     * 
      * @param encryptContext
+     * @throws HeaderParseException
      * @throws OperationException
      */
     @Override
-    public void initVector(EncryptContext encryptContext) throws OperationException {
-        // 获取文件句柄
-        var in = encryptContext.getInputStream();
-        var ivLength = new byte[IV_LENGTH_BYTES];
-        try {
-            in.read(ivLength);
-
-            // 读取向量值的长度
-            var length = Utils._1byte2Int(ivLength);
-            var iv = new byte[length];
-            // 读取IV向量值
-            in.read(iv);
-            // 设置iv到领域模型中
-            encryptContext.getOperationVO().setIv(iv);
-        } catch (Throwable e) {
-            throw new DecryptException("IV reading failed.", e);
+    public void parseVector(EncryptContext encryptContext) throws HeaderParseException, OperationException {
+        var fileHeader = encryptContext.getFileHeader();
+        var iv = fileHeader.getIv();
+        if (Objects.isNull(iv) || iv.isBlank()) {
+            throw new HeaderParseException("File header integrity compromised; IV (Initialization Vector) is missing.");
         }
+
+        // 将iv进行Base64解码后写入到领域模型中
+        encryptContext.getOperationVO().setIv(Utils.toBase64Decode(iv));
     }
 
     @Override
-    public void bind(EncryptContext encryptContext) throws EncryptException {
-        var in = encryptContext.getInputStream();
-        var hardwareLength = new byte[UUID_BYTES];
-        try {
-            // 读取hardwareUUID长度
-            in.read(hardwareLength);
-            var length = Utils._1byte2Int(hardwareLength);
-            // 如果没有开启--onlyLocal命令则hardwareLength=0
-            if (0 == length) {
-                return;
-            }
-            var hardware = new byte[length];
-            // 读取hardwareUUID
-            in.read(hardware);
-            var uuid = new String(Utils.toBase64Decode(hardware), Charsets.UTF_8);
-            if (!command.getHardwareId().equals(uuid)) {
-                throw new OperationException("The UUID does not match,Please decrypt on the same physical device");
-            }
-            var fileId = new byte[FILE_ID_BYTES];
-            // 读取fileUUID
-            in.read(fileId);
-            this.fileId = Utils.bytes2Long(fileId);
-
-            var operationVO = encryptContext.getOperationVO();
-            // 还原真实秘钥
-            restoreKey(Utils.bytes2Long(fileId), operationVO);
-        } catch (Throwable e) {
-            throw new EncryptException(e.getMessage(), e);
+    public void bind(EncryptContext encryptContext) throws OperationException {
+        var fileHeader = encryptContext.getFileHeader();
+        var operationVO = encryptContext.getOperationVO();
+        if (!fileHeader.isOnlyLocal()) {
+            return;
         }
+
+        // 获取物理设备UUID
+        var hardware = fileHeader.getHardwareId();
+        if (Objects.isNull(hardware)) {
+            throw new OperationException("File header integrity compromised; Hardware ID is missing.");
+        }
+        var uuid = new String(Utils.toBase64Decode(hardware), Charsets.UTF_8);
+        if (!command.getHardwareId().equals(uuid)) {
+            throw new OperationException("The UUID does not match,Please decrypt on the same physical device");
+        }
+
+        // 获取文件唯一ID
+        var fileId = fileHeader.getFileId();
+        if (Objects.isNull(fileId)) {
+            throw new OperationException("File header integrity compromised; File ID is missing.");
+        }
+
+        // 还原真实秘钥
+        restoreKey(Utils.bytes2Long(fileId), operationVO);
     }
 
     @Override
@@ -189,8 +222,12 @@ public abstract class AbstractDecrypt extends AbstractOperationTemplate {
                     System.arraycopy(content, 0, temp, 0, len);
                     content = temp;
                 }
+
+                // 获取加解密领域模型
+                OperationVO operationVO = encryptContext.getOperationVO();
+
                 // 获取解密后的数据
-                var decryptData = dataDecrypt(content, encryptContext.getOperationVO().getSecretKey(), encryptContext.getOperationVO().getIv());
+                var decryptData = dataDecrypt(content, operationVO.getSecretKey(), operationVO.getIv(), operationVO.getSalt());
                 out.write(decryptData, 0, decryptData.length);
                 out.flush();
 
@@ -247,7 +284,7 @@ public abstract class AbstractDecrypt extends AbstractOperationTemplate {
                 return;
             }
             // 使用原秘钥解密对应的随机秘钥
-            var sk = dataDecrypt(rsk.getBytes(Charsets.UTF_8), operationVO.getSecretKey(), operationVO.getIv());
+            var sk = dataDecrypt(rsk.getBytes(Charsets.UTF_8), operationVO.getSecretKey(), operationVO.getIv(), operationVO.getSalt());
             operationVO.setSecretKey(new String(sk, Charsets.UTF_8).toCharArray());
         } catch (Throwable e) {
             throw new OperationException(e.getMessage(), e);
@@ -256,13 +293,38 @@ public abstract class AbstractDecrypt extends AbstractOperationTemplate {
 
     /**
      * 数据解密操作
-     * @param content
-     * @param secretKey
-     * @param iv
+     * @param content   数据
+     * @param secretKey 秘钥
+     * @param iv        IV向量
+     * @param salt
      * @return
      * @throws DecryptException
      */
-    protected abstract byte[] dataDecrypt(byte[] content, char[] secretKey, byte[] iv) throws DecryptException;
+    protected abstract byte[] dataDecrypt(byte[] content, char[] secretKey, byte[] iv, byte[] salt) throws DecryptException;
+
+    /**
+     * 数据解密操作
+     * @param content
+     * @param secretKey
+     * @param iv
+     * @param salt
+     * @param cipherAlgorithm
+     * @return
+     * @throws DecryptException
+     */
+    protected byte[] dataDecrypt(byte[] content, char[] secretKey, byte[] iv, byte[] salt, String cipherAlgorithm) throws DecryptException {
+        try {
+            // 获取秘钥器
+            var key = getGenerateKey(secretKey, salt);
+            var cipher = Cipher.getInstance(cipherAlgorithm);
+            cipher.init(Cipher.DECRYPT_MODE, key, new IvParameterSpec(iv));
+
+            // 执行数据解密
+            return cipher.doFinal(content);
+        } catch (Throwable e) {
+            throw new DecryptException(e);
+        }
+    }
 
     /**
      * 构建EstimatedTimeEvent
