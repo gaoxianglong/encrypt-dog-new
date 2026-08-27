@@ -50,6 +50,21 @@ Usage: encrypt-dog [-dehoV] -k [-k]... [-a=<encryptAlgorithm>] [-t=<storage
   -V, --version      Print version information and exit.
 Copyright(c) 2021 - 2031 gaoxianglong. All Rights Reserved.
 ```
+### gui mode
+EncryptionDog also provides a Swing graphical interface with a starry-sky particle theme. Add `--gui` to the startup command to launch it (the remaining arguments prefill the form):
+```shell
+$ java -Xms512m -Xmx512m -jar dog-2.0.3.jar --gui
+# prefill source files and algorithm
+$ java -jar dog-2.0.3.jar --gui -e -a AES -s /path/to/file1,/path/to/file2
+```
+Interface guide (all UI text is English, decorated with the app logo in the form header and title bar):
+- **Mode**: switch between Encrypt / Decrypt. The confirm-key field only appears in encrypt mode.
+- **Source files**: pick multiple files (`+ Select files`) or a directory (`+ Select directory`, recurses subdirectories); `Remove selected` removes entries.
+- **Secret key**: enter the key (at least 6 digits); enter it twice when encrypting. The eye icon inside each key field toggles masked/plaintext display without losing input.
+- **Algorithm**: AES (default) / 3DES / XOR.
+- **Target directory**: leave blank to output next to the source files.
+- **Options**: `Delete source files after operation` (asks again before executing), `Local machine only` (highest security, same as `-o`).
+- After clicking Encrypt/Decrypt, a file-list confirmation dialog appears (equivalent to the terminal Y/N confirmations), then a progress panel shows per-file progress and estimated remaining time. On full success the particle background bursts; on failure the card shakes and the error is shown in red.
 ### highest security
 Files encrypted on computer a can only be decrypted on computer a.<br/>
 Principle:

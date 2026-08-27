@@ -83,6 +83,15 @@ public class EncryptProxy implements Proxy {
     }
 
     /**
+     * 设置视图渲染器,缺省为DashboardView。
+     * GUI模式下可注入GUI视图,由ViewSchedule定时回调以刷新进度。
+     * @param view
+     */
+    public void setView(View view) {
+        this.view = view;
+    }
+
+    /**
      * 执行加/解密操作
      *
      * @param context

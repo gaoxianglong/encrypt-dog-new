@@ -60,8 +60,8 @@ public class ViewSchedule {
      * @param latch
      */
     public static void renderDashboardView(View view, ResultContext context, CountDownLatch latch) {
-        // 非控制台执行时不进行渲染
-        if (!Utils.isConsole()) {
+        // 非控制台执行且视图依赖控制台环境时不进行渲染,GUI视图在无终端环境下仍需要被调度
+        if (!Utils.isConsole() && view.isConsoleRequired()) {
             return;
         }
         // 每隔2秒重新渲染一次dashboard视图
@@ -86,5 +86,7 @@ public class ViewSchedule {
      */
     public static void stop() {
         scheduledExecutorService.shutdownNow();
+        // 重建线程池,支持同一JVM会话内再次调度渲染(如GUI模式下多次执行操作)
+        scheduledExecutorService = new ScheduledThreadPool().buildExecutor();
     }
 }

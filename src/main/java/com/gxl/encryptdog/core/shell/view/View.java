@@ -42,4 +42,14 @@ public interface View {
      * @throws CommandException
      */
     void draw(ResultContext context) throws CommandException;
+
+    /**
+     * 渲染是否依赖控制台环境,缺省为true。
+     * 控制台视图(如DashboardView)依赖终端渲染,保持缺省值即可；
+     * GUI视图在无终端环境下仍需要被定时调度(负责进度刷新与闭锁释放),覆写返回false。
+     * @return
+     */
+    default boolean isConsoleRequired() {
+        return true;
+    }
 }
