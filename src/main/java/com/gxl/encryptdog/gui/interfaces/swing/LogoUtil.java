@@ -27,7 +27,9 @@ import java.awt.RenderingHints;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * logo资源加载工具,盾牌图标(SVG经qlmanage转换为PNG)随jar发布
@@ -37,6 +39,11 @@ import java.util.Objects;
  * @since 2026/8/26 14:00
  */
 public final class LogoUtil {
+    /**
+     * 图标缓存(资源+尺寸为键):避免在paint路径中反复解码/扫描/缩放图片
+     */
+    private static final Map<String, ImageIcon> ICON_CACHE = new ConcurrentHashMap<>();
+
     private LogoUtil() {
     }
 
@@ -59,6 +66,11 @@ public final class LogoUtil {
      * @return
      */
     public static ImageIcon loadImage(String resource, int size) {
+        String key = resource + "@" + size;
+        ImageIcon cached = ICON_CACHE.get(key);
+        if (cached != null) {
+            return cached;
+        }
         try (InputStream in = LogoUtil.class.getClassLoader().getResourceAsStream(resource)) {
             if (Objects.isNull(in)) {
                 return null;
@@ -78,7 +90,9 @@ public final class LogoUtil {
             g2d.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BICUBIC);
             g2d.drawImage(content, 0, 0, width, height, null);
             g2d.dispose();
-            return new ImageIcon(scaled);
+            var icon = new ImageIcon(scaled);
+            ICON_CACHE.put(key, icon);
+            return icon;
         } catch (IOException e) {
             return null;
         }

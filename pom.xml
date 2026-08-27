@@ -31,6 +31,20 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
     <build>
+        <resources>
+            <!-- 整目录默认复制(不过滤,避免损坏png等二进制资源) -->
+            <resource>
+                <directory>src/main/resources</directory>
+            </resource>
+            <!-- 仅properties文件开启过滤:${project.version}注入pom版本 -->
+            <resource>
+                <directory>src/main/resources</directory>
+                <filtering>true</filtering>
+                <includes>
+                    <include>properties/**/*.properties</include>
+                </includes>
+            </resource>
+        </resources>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>

@@ -19,6 +19,8 @@
 package com.gxl.encryptdog.gui.interfaces.swing.constant;
 
 import java.awt.Color;
+import java.io.IOException;
+import java.io.InputStream;
 
 /**
  * 界面视觉与动画常量
@@ -33,9 +35,9 @@ public final class UiConstants {
      */
     public static final String APP_NAME                 = "EncryptionDog";
     /**
-     * 应用版本
+     * 应用版本(构建时由Maven过滤dog.properties注入project.version,与pom版本一致)
      */
-    public static final String VERSION                  = "v2.0.3-RELEASE";
+    public static final String VERSION                  = initVersion();
     /**
      * logo资源路径
      */
@@ -169,17 +171,9 @@ public final class UiConstants {
      */
     public static final int    PRIMARY_BUTTON_HEIGHT    = 44;
     /**
-     * 任务标题字号
-     */
-    public static final int    TASK_TITLE_FONT_SIZE     = 22;
-    /**
      * 标题字号
      */
     public static final int    TITLE_FONT_SIZE          = 22;
-    /**
-     * 副标题字号
-     */
-    public static final int    SUBTITLE_FONT_SIZE       = 13;
     /**
      * 正文字号
      */
@@ -216,10 +210,6 @@ public final class UiConstants {
      * 卡片描边色（半透明白）
      */
     public static final Color  CARD_BORDER              = new Color(255, 255, 255, 48);
-    /**
-     * 卡片高光描边色
-     */
-    public static final Color  CARD_HIGHLIGHT           = new Color(255, 255, 255, 70);
     /**
      * 卡片阴影色
      */
@@ -270,5 +260,23 @@ public final class UiConstants {
     public static final Color  BUTTON_DISABLED          = new Color(0x4A4A6E);
 
     private UiConstants() {
+    }
+
+    /**
+     * 从构建注入的dog.properties读取project.version并拼"v"前缀展示;
+     * 读取失败回退vUNKNOWN(仅打包异常时出现)
+     * @return 版本展示文案
+     */
+    private static String initVersion() {
+        try (InputStream in = UiConstants.class.getClassLoader().getResourceAsStream("properties/dog.properties")) {
+            if (in != null) {
+                var properties = new java.util.Properties();
+                properties.load(in);
+                return "v" + properties.getProperty("project.version", "UNKNOWN");
+            }
+        } catch (IOException ignored) {
+            // 打包异常时回退占位文案
+        }
+        return "vUNKNOWN";
     }
 }

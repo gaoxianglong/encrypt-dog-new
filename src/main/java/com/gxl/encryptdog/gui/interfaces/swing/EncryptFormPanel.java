@@ -88,22 +88,6 @@ public class EncryptFormPanel extends JPanel {
      */
     private static final int     ROW_PITCH          = 46;
     /**
-     * 加密模式任务标题
-     */
-    private static final String  ENCRYPT_TITLE      = "Encrypt files";
-    /**
-     * 加密模式副标题
-     */
-    private static final String  ENCRYPT_SUBTITLE   = "Protect your files with local encryption";
-    /**
-     * 解密模式任务标题
-     */
-    private static final String  DECRYPT_TITLE      = "Decrypt files";
-    /**
-     * 解密模式副标题
-     */
-    private static final String  DECRYPT_SUBTITLE   = "Restore your files with local decryption";
-    /**
      * 错误气泡与锚点字段的间距
      */
     private static final int     TOAST_ANCHOR_GAP   = 8;
@@ -118,14 +102,6 @@ public class EncryptFormPanel extends JPanel {
      * 加解密模式等宽分段选择器
      */
     private final SegmentedToggle modeToggle        = new SegmentedToggle(new String[] { "Encrypt", "Decrypt" });
-    /**
-     * 任务标题,文案随加/解密模式联动
-     */
-    private final JLabel           taskTitleLabel;
-    /**
-     * 副标题,文案随加/解密模式联动
-     */
-    private final JLabel           subtitleLabel;
     /**
      * 已选文件列表模型
      */
@@ -194,22 +170,8 @@ public class EncryptFormPanel extends JPanel {
         setOpaque(false);
         setLayout(null);
 
-        // 标题区:当前任务标题 + 副标题(应用品牌仅保留在窗口标题栏),文案随模式在switchMode中切换
-        // 标题+副标题作为整体(50px)在头部容器(卡片顶0至模式切换栏顶64)内垂直居中,上下留白各7px
-        taskTitleLabel = new JLabel(ENCRYPT_TITLE);
-        taskTitleLabel.setForeground(UiConstants.TEXT_PRIMARY);
-        taskTitleLabel.setFont(UIManager.getFont(DEFAULT_FONT_KEY).deriveFont(Font.BOLD, UiConstants.TASK_TITLE_FONT_SIZE));
-        taskTitleLabel.setBounds(LABEL_X, 7, 400, 34);
-        add(taskTitleLabel);
-
-        subtitleLabel = new JLabel(ENCRYPT_SUBTITLE);
-        subtitleLabel.setForeground(UiConstants.TEXT_SECONDARY);
-        subtitleLabel.setFont(UIManager.getFont(DEFAULT_FONT_KEY).deriveFont(Font.PLAIN, UiConstants.SUBTITLE_FONT_SIZE));
-        subtitleLabel.setBounds(LABEL_X, 41, 420, 16);
-        add(subtitleLabel);
-
-        // 源文件模块:等宽分段选择器 + 拖拽框 + 操作按钮
-        modeToggle.setBounds(FIELD_X, 64, FIELD_WIDTH, 36);
+        // 主副标题已取消:模式切换栏为蒙层首行,左边缘与下方字段标签列对齐,右边缘与输入区一致
+        modeToggle.setBounds(LABEL_X, 14, FIELD_X + FIELD_WIDTH - LABEL_X, 36);
         modeToggle.addChangeListener(new ChangeListener() {
             @Override
             public void stateChanged(ChangeEvent e) {
@@ -226,12 +188,13 @@ public class EncryptFormPanel extends JPanel {
                 }
             }
         });
-        dropPanel.setBounds(FIELD_X, 104, FIELD_WIDTH, 112);
+        // 拖拽区左边缘与字段标签列对齐,右边缘与输入区一致
+        dropPanel.setBounds(LABEL_X, 54, FIELD_X + FIELD_WIDTH - LABEL_X, 112);
         add(dropPanel);
 
         // 按钮行:选择文件/选择目录左对齐,删除选中右对齐
         JButton selectFileButton = createSmallButton("+ Select files");
-        selectFileButton.setBounds(FIELD_X, 220, 130, 26);
+        selectFileButton.setBounds(FIELD_X, 170, 130, 26);
         selectFileButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -241,7 +204,7 @@ public class EncryptFormPanel extends JPanel {
         add(selectFileButton);
 
         JButton selectDirButton = createSmallButton("+ Select directory");
-        selectDirButton.setBounds(FIELD_X + 142, 220, 130, 26);
+        selectDirButton.setBounds(FIELD_X + 142, 170, 130, 26);
         selectDirButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -251,7 +214,7 @@ public class EncryptFormPanel extends JPanel {
         add(selectDirButton);
 
         JButton removeButton = createSmallButton("Remove selected");
-        removeButton.setBounds(FIELD_X + FIELD_WIDTH - 130, 220, 130, 26);
+        removeButton.setBounds(FIELD_X + FIELD_WIDTH - 130, 170, 130, 26);
         removeButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -261,18 +224,18 @@ public class EncryptFormPanel extends JPanel {
         add(removeButton);
 
         // 密钥区
-        addLabel("Secret key", 256);
-        secretKeyField.setBounds(FIELD_X, 252, FIELD_WIDTH, UiConstants.INPUT_HEIGHT);
+        addLabel("Secret key", 206);
+        secretKeyField.setBounds(FIELD_X, 202, FIELD_WIDTH, UiConstants.INPUT_HEIGHT);
         add(secretKeyField);
 
-        confirmKeyLabel.setBounds(LABEL_X, 306, LABEL_WIDTH, 22);
+        confirmKeyLabel.setBounds(LABEL_X, 256, LABEL_WIDTH, 22);
         styleLabel(confirmKeyLabel);
         add(confirmKeyLabel);
-        confirmKeyField.setBounds(FIELD_X, 298, FIELD_WIDTH, UiConstants.INPUT_HEIGHT);
+        confirmKeyField.setBounds(FIELD_X, 248, FIELD_WIDTH, UiConstants.INPUT_HEIGHT);
         add(confirmKeyField);
 
         // 算法区,坐标由layoutRows统一管理
-        algorithmLabel = addLabel("Algorithm", 352);
+        algorithmLabel = addLabel("Algorithm", 302);
         algorithmCombo.addItemListener(new ItemListener() {
             @Override
             public void itemStateChanged(ItemEvent e) {
@@ -290,7 +253,7 @@ public class EncryptFormPanel extends JPanel {
         add(xorWarningLabel);
 
         // 目标目录区: 字段420全宽,Browse按钮内嵌右端(与密码框眼睛按钮同模式),坐标由layoutRows统一管理
-        targetDirLabel = addLabel("Target directory", 398);
+        targetDirLabel = addLabel("Target directory", 348);
         targetBox = new JPanel(new BorderLayout());
         targetBox.setOpaque(false);
         targetPathField.setToolTipText("Leave blank to use the source directory");
@@ -351,14 +314,11 @@ public class EncryptFormPanel extends JPanel {
     }
 
     /**
-     * 切换加/解密模式,驱动标题文案、确认密钥框显隐、下方模块布局与主按钮文字
+     * 切换加/解密模式,驱动确认密钥框显隐、下方模块布局与主按钮文字
      * @param isEncrypt
      */
     private void switchMode(boolean isEncrypt) {
         modeToggle.setSelectedIndex(isEncrypt ? 0 : 1);
-        // 任务标题与副标题随模式联动
-        taskTitleLabel.setText(isEncrypt ? ENCRYPT_TITLE : DECRYPT_TITLE);
-        subtitleLabel.setText(isEncrypt ? ENCRYPT_SUBTITLE : DECRYPT_SUBTITLE);
         // 确认密钥框仅加密模式显示,对齐终端"解密不二次确认"语义
         confirmKeyLabel.setVisible(isEncrypt);
         confirmKeyField.setVisible(isEncrypt);
@@ -379,14 +339,14 @@ public class EncryptFormPanel extends JPanel {
      */
     private void layoutRows(boolean isEncrypt) {
         int offset = isEncrypt ? 0 : ROW_PITCH;
-        algorithmLabel.setBounds(LABEL_X, 352 - offset, LABEL_WIDTH, 24);
-        algorithmCombo.setBounds(FIELD_X, 344 - offset, 180, UiConstants.INPUT_HEIGHT);
-        xorWarningLabel.setBounds(322, 344 - offset, 232, UiConstants.INPUT_HEIGHT);
-        targetDirLabel.setBounds(LABEL_X, 398 - offset, LABEL_WIDTH, 24);
-        targetBox.setBounds(FIELD_X, 390 - offset, FIELD_WIDTH, UiConstants.INPUT_HEIGHT);
-        deleteCheckBox.setBounds(FIELD_X, 436 - offset, 260, 26);
-        onlyLocalCheckBox.setBounds(FIELD_X, 466 - offset, 300, 26);
-        submitButton.setBounds((UiConstants.CARD_WIDTH - 260) / 2, 522 - offset, 260, UiConstants.PRIMARY_BUTTON_HEIGHT);
+        algorithmLabel.setBounds(LABEL_X, 302 - offset, LABEL_WIDTH, 24);
+        algorithmCombo.setBounds(FIELD_X, 294 - offset, 180, UiConstants.INPUT_HEIGHT);
+        xorWarningLabel.setBounds(322, 294 - offset, 232, UiConstants.INPUT_HEIGHT);
+        targetDirLabel.setBounds(LABEL_X, 348 - offset, LABEL_WIDTH, 24);
+        targetBox.setBounds(FIELD_X, 340 - offset, FIELD_WIDTH, UiConstants.INPUT_HEIGHT);
+        deleteCheckBox.setBounds(FIELD_X, 386 - offset, 260, 26);
+        onlyLocalCheckBox.setBounds(FIELD_X, 416 - offset, 300, 26);
+        submitButton.setBounds((UiConstants.CARD_WIDTH - 260) / 2, 472 - offset, 260, UiConstants.PRIMARY_BUTTON_HEIGHT);
     }
 
     /**
@@ -572,7 +532,7 @@ public class EncryptFormPanel extends JPanel {
         deleteCheckBox.setSelected(false);
         onlyLocalCheckBox.setSelected(false);
         clearError();
-        // 模式与算法复位(switchMode联动标题文案、确认密钥行显隐与布局)
+        // 模式与算法复位(switchMode联动确认密钥行显隐与布局)
         modeToggle.setSelectedIndex(0);
         algorithmCombo.setSelectedItem("AES");
     }

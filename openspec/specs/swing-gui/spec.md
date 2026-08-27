@@ -161,52 +161,35 @@ GUI 功能的引入 MUST NOT 改变终端模式的可观察行为：命令行参
 - **WHEN** logo 资源原始宽高比与方形显示区域不一致
 - **THEN** logo 按原图比例缩放并居中于显示区域，图形不被拉伸变形
 
+### Requirement: 标题栏 logo 与品牌名称协调
+
+标题栏 logo 的显示尺寸 SHALL 与品牌名称视觉高度相当，不显过小。
+
+#### Scenario: 标题栏 logo 与品牌名称协调
+
+- **WHEN** 用户查看窗口标题栏
+- **THEN** logo 与 "EncryptionDog" 垂直居中对齐，且 logo 视觉高度与品牌名称相当
+
 ### Requirement: 信息层级
 
-GUI SHALL 采用"应用品牌—当前任务—具体操作"三级信息层级：应用品牌（logo + EncryptionDog）仅出现在窗口标题栏；主内容区以与当前模式对应的任务标题与副标题说明当前任务——加密模式为 "Encrypt files" / "Protect your files with local encryption"，解密模式为 "Decrypt files" / "Restore your files with local decryption"——不重复展示品牌名称；Encrypt/Decrypt 模式切换紧接任务标题；版本号 SHALL 位于内容卡片右下角，以次要视觉样式展示。
+GUI SHALL 采用"应用品牌—任务操作"两级信息层级：应用品牌（logo + EncryptionDog）仅出现在窗口标题栏；主内容区 SHALL 为干净统一的半透明毛玻璃蒙层，SHALL NOT 绘制顶部高光带（不出现把蒙层分成上下两部分的横向分割线），蒙层上 SHALL NOT 展示任务主标题与副标题，首行即 Encrypt/Decrypt 模式切换，不重复展示品牌名称；版本号 SHALL 位于内容卡片右下角，以次要视觉样式展示。
 
 #### Scenario: 品牌单一性
 
 - **WHEN** 用户查看 GUI 窗口
-- **THEN** logo 与 "EncryptionDog" 仅在窗口标题栏出现一次，内容卡片头部不重复展示品牌名称
+- **THEN** logo 与 "EncryptionDog" 仅在窗口标题栏出现一次，内容卡片不重复展示品牌名称
 
 #### Scenario: 任务标题与模式切换
 
-- **WHEN** 用户查看内容卡片头部并切换 Encrypt/Decrypt 模式
-- **THEN** 加密模式展示任务标题 "Encrypt files" 与副标题 "Protect your files with local encryption"；解密模式展示 "Decrypt files" 与 "Restore your files with local decryption"；分段选择器紧接任务标题且标题块位置不变
+- **WHEN** 用户查看内容卡片并切换 Encrypt/Decrypt 模式
+- **THEN** 卡片顶部不再展示任务主标题与副标题，首行直接为 Encrypt/Decrypt 分段选择器，模式切换仅联动确认密钥行与模式文案
 
 #### Scenario: 版本号位置
 
 - **WHEN** 用户查看内容卡片
 - **THEN** 版本号显示在卡片右下角，为小字号次要色，不处于视觉焦点位置
 
-### Requirement: 头部排版
 
-内容卡片头部的主标题与副标题 SHALL 作为一个整体排版单元，在头部容器（卡片顶部至模式切换栏顶部之间）内垂直居中；副标题底边与模式切换栏顶边之间 SHALL 保持明显可见的间距；头部排版单元的任何调整 SHALL NOT 改变模式切换栏的位置；模式切换栏下方模块的位置仅由"模式切换布局联动"要求驱动，不受头部排版影响。
-
-#### Scenario: 头部块垂直居中
-
-- **WHEN** 用户查看内容卡片头部
-- **THEN** 主标题与副标题（文案随模式联动）作为一个整体在头部容器内垂直居中，上下留白均衡
-
-#### Scenario: 与模式切换栏的间距
-
-- **WHEN** 用户查看头部与模式切换栏的衔接处
-- **THEN** 副标题底边与 Encrypt/Decrypt 分段选择器顶边之间存在明显可见的间距，且分段选择器位置保持不变
-
-### Requirement: 字号层级
-
-内容卡片任务标题的字号 SHALL NOT 大于标题栏品牌名称的字号，保持"品牌—任务"层级协调；标题栏 logo 的显示尺寸 SHALL 与品牌名称视觉高度相当，不显过小。
-
-#### Scenario: 任务标题不高于品牌名称
-
-- **WHEN** 用户同时查看任务标题 "Encrypt files" 与标题栏品牌名称 "EncryptionDog"
-- **THEN** 任务标题字号不高于品牌名称字号
-
-#### Scenario: 标题栏 logo 与品牌名称协调
-
-- **WHEN** 用户查看窗口标题栏
-- **THEN** logo 与 "EncryptionDog" 垂直居中对齐，且 logo 视觉高度与品牌名称相当
 
 ### Requirement: 滚动条主题配色
 
@@ -237,7 +220,7 @@ GUI 窗口底部 SHALL 展示版权信息 "Copyright (c) 2021-2031 gaoxianglong"
 
 ### Requirement: 模式切换布局联动
 
-切换加/解密模式时，确认密钥行（标签与输入框）SHALL 仅在加密模式展示；解密模式下该行隐藏后，其下方模块（Algorithm、Target directory、两个选项复选框、错误提示、主操作按钮）SHALL 整体上移一个确认密钥行行高，使 Secret key 与 Algorithm 之间保持与其他相邻字段一致的间距，不出现空洞；加密模式下各模块位置与变更前完全一致；卡片右下角版本号 SHALL 在两种模式下均保持原位。
+切换加/解密模式时，确认密钥行（标签与输入框）SHALL 仅在加密模式展示；解密模式下该行隐藏后，其下方模块（Algorithm、Target directory、两个选项复选框、错误提示、主操作按钮）SHALL 整体上移一个确认密钥行行高，使 Secret key 与 Algorithm 之间保持与其他相邻字段一致的间距，不出现空洞；加密模式下各模块位置与变更前完全一致；蒙层顶部主副标题取消后，模式切换栏 SHALL 位于蒙层顶部首行，其下方模块 SHALL 整体上移至卡片顶部，卡片顶部 SHALL NOT 出现空洞；卡片右下角版本号 SHALL 在两种模式下均保持原位。
 
 #### Scenario: 解密模式布局紧凑
 
@@ -253,6 +236,15 @@ GUI 窗口底部 SHALL 展示版权信息 "Copyright (c) 2021-2031 gaoxianglong"
 
 - **WHEN** 用户在 Encrypt 与 Decrypt 模式之间切换
 - **THEN** 卡片右下角版本号位置始终不变
+
+### Requirement: 表单首行与拖拽区左对齐
+
+首页蒙层内 Encrypt/Decrypt 模式切换栏与文件拖拽区 SHALL 左边缘与下方字段标签（如 "Secret key"）的起始位置对齐，右边缘 SHALL 与输入字段右边缘保持一致；其余表单控件位置 SHALL 不变。
+
+#### Scenario: 首行与拖拽区左对齐
+
+- **WHEN** 用户查看首页表单
+- **THEN** Encrypt/Decrypt 分段选择器与文件拖拽区的左边缘与 "Secret key" 等字段标签起始位置对齐，右边缘与输入字段右边缘对齐，其余表单控件位置不变
 
 ### Requirement: 删除源文件确认
 
@@ -421,3 +413,21 @@ GUI 窗口底部 SHALL 展示版权信息 "Copyright (c) 2021-2031 gaoxianglong"
 
 - **WHEN** 执行中发生失败（含部分失败与执行异常）
 - **THEN** 系统停留执行表格页呈现失败信息，不自动返回表单；用户点击返回图标后表单呈重置后的初始状态
+
+### Requirement: 版本号与构建版本一致
+
+GUI 界面与终端启动横幅展示的版本号 SHALL 与项目构建版本（pom 版本）一致；版本号 SHALL 由构建注入（资源过滤）并在运行时读取，SHALL NOT 硬编码于代码或资源配置中；构建版本升级后展示版本 SHALL 随之自动更新。
+
+#### Scenario: 展示版本随构建版本更新
+
+- **WHEN** 用户查看 GUI 表单页右下角版本号或终端启动横幅
+- **THEN** 展示的版本号与 pom 构建版本一致（如构建版本 2.0.4 时展示 v2.0.4 / version: 2.0.4）；升级构建版本并重新打包后，展示版本随之更新，无需修改代码
+
+### Requirement: 星空粒子背景渲染性能
+
+星空粒子背景 SHALL 以受控的 CPU 开销渲染（渲染计算与进程空闲 CPU 占用低于优化前约 140% 单核的水平；60fps 帧率下 Swing 整窗重绘管线存在固定开销，最终 CPU 以实测为准），同时 SHALL 保持与优化前一致的动画效果与交互效果：深空渐变背景、粒子漂浮与闪烁、星座连线（距离阈值与透明度衰减不变）、鼠标微扰、聚集爆发动画，帧率（60fps）与粒子数量 SHALL NOT 降低或减少。
+
+#### Scenario: 渲染性能受控且效果不变
+
+- **WHEN** 应用空闲展示星空粒子背景（含鼠标在窗口内移动）
+- **THEN** 渲染耗时与进程 CPU 占用明显下降；渐变、粒子、连线、鼠标微扰与爆发动画的视觉效果和交互响应与优化前一致，帧率不低于优化前

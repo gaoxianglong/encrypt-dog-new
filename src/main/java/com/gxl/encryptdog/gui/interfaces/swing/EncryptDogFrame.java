@@ -271,8 +271,6 @@ public class EncryptDogFrame extends JFrame {
         formPanel.clearError();
         // 窗口标题栏在所有页面保持展示(用户明确不动它);执行页仅展示home返回图标
         homeButton.setVisible(true);
-        // 执行页蒙层保持干干净净:关闭顶部高光带(避免出现横向分割线)
-        glassCard.setTopHighlight(false);
         // 直接切换宽屏形态与执行表格页(无逐帧动画与淡入,避免卡顿)
         switchWindowShape(true);
         glassCard.removeAll();
@@ -345,9 +343,8 @@ public class EncryptDogFrame extends JFrame {
             return;
         }
         transitioning = true;
-        // 隐藏执行页home图标,恢复表单页蒙层顶部高光
+        // 隐藏执行页home图标
         homeButton.setVisible(false);
-        glassCard.setTopHighlight(true);
         // 直接换回表单(无淡入动画),窗口直接切回方形
         glassCard.removeAll();
         glassCard.add(formPanel);

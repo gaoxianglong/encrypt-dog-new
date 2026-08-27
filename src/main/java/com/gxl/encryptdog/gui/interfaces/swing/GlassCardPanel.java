@@ -26,8 +26,6 @@ import java.awt.BasicStroke;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.RenderingHints;
-import java.awt.geom.RoundRectangle2D;
-
 /**
  * 毛玻璃卡片：半透明圆角 + 阴影 + 高光描边，支持内容整体淡入淡出。
  *
@@ -53,31 +51,13 @@ public class GlassCardPanel extends JPanel {
      */
     private static final float  BORDER_WIDTH        = 1.2F;
     /**
-     * 顶部高光高度
-     */
-    private static final int    TOP_HIGHLIGHT_HEIGHT = 60;
-    /**
      * 内容不透明度（0~1）
      */
     private float               contentAlpha        = 1.0F;
-    /**
-     * 是否绘制顶部高光带（执行页关闭:保持干净蒙层,不出现横向分割线）
-     */
-    private boolean             topHighlight        = true;
 
     public GlassCardPanel() {
         setOpaque(false);
         setLayout(null);
-    }
-
-    /**
-     * 设置是否绘制顶部高光带。
-     *
-     * @param topHighlight true=绘制,false=不绘制
-     */
-    public void setTopHighlight(boolean topHighlight) {
-        this.topHighlight = topHighlight;
-        repaint();
     }
 
     /**
@@ -122,12 +102,7 @@ public class GlassCardPanel extends JPanel {
         g2d.setStroke(new BasicStroke(BORDER_WIDTH));
         g2d.drawRoundRect(0, 0, width - 1, height - 1, UiConstants.CARD_ARC, UiConstants.CARD_ARC);
 
-        // 顶部高光(执行页关闭:保持干净蒙层,不出现横向分割线)
-        if (topHighlight) {
-            g2d.setColor(UiConstants.CARD_HIGHLIGHT);
-            g2d.draw(new RoundRectangle2D.Double(0.5, 0.5, width - 1, TOP_HIGHLIGHT_HEIGHT,
-                    UiConstants.CARD_ARC, UiConstants.CARD_ARC));
-        }
+        // 顶部高光描边带已取消(其底边在蒙层上形成分割线),蒙层为干净统一的半透明面
         g2d.dispose();
     }
 }

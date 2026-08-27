@@ -33,7 +33,9 @@ import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.geom.Ellipse2D;
+import java.awt.image.BufferedImage;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 
@@ -122,6 +124,55 @@ public class ParticlePanel extends JPanel {
      * 爆发中心
      */
     private Point                burstCenter;
+    /**
+     * 背景渐变缓存(尺寸变化时重建,每帧仅贴绘)
+     */
+    private BufferedImage        backgroundCache;
+    /**
+     * 缓存宽度(尺寸变化判定)
+     */
+    private int                  cacheWidth          = -1;
+    /**
+     * 缓存高度(尺寸变化判定)
+     */
+    private int                  cacheHeight         = -1;
+    /**
+     * 连线网格桶表头(复用固定数组,避免每帧分配)
+     */
+    private int[]                cellHead;
+    /**
+     * 连线网格桶链表后继指针(复用固定数组)
+     */
+    private int[]                cellNext;
+    /**
+     * 粒子精灵缓存:(半径桶×亮度桶)→预渲染AA椭圆图像,逐帧仅贴绘,
+     * 避免每帧300次AA路径填充与setColor管线冲刷(MTL下主要CPU开销)
+     */
+    private final BufferedImage[][] particleSprites  = new BufferedImage[SPRITE_RADIUS_BUCKETS][SPRITE_BRIGHTNESS_BUCKETS];
+    /**
+     * 精灵半径桶数(半径0.7..2.2,步长0.1)
+     */
+    private static final int      SPRITE_RADIUS_BUCKETS = 16;
+    /**
+     * 精灵亮度桶数(与调色板一致)
+     */
+    private static final int      SPRITE_BRIGHTNESS_BUCKETS = 64;
+    /**
+     * 精灵半径步长
+     */
+    private static final double   SPRITE_RADIUS_STEP  = 0.1;
+    /**
+     * 精灵内边距(AA外扩留白)
+     */
+    private static final int      SPRITE_INSET        = 1;
+    /**
+     * 粒子亮度调色板(64级,PARTICLE_DIM↔PARTICLE_BRIGHT插值)
+     */
+    private static final Color[] PARTICLE_PALETTE    = buildParticlePalette();
+    /**
+     * 连线透明度调色板(alpha 0..LINK_MAX_ALPHA)
+     */
+    private static final Color[] LINK_PALETTE        = buildLinkPalette();
 
     public ParticlePanel() {
         setOpaque(false);
@@ -328,42 +379,94 @@ public class ParticlePanel extends JPanel {
     }
 
     /**
-     * 绘制深空渐变背景。
+     * 绘制深空渐变背景(渐变预渲染为缓冲图像,尺寸不变时每帧仅贴绘)。
      *
      * @param g2d 绘图上下文
      */
     private void paintBackground(Graphics2D g2d) {
-        g2d.setPaint(new GradientPaint(0, 0, UiConstants.BG_TOP, 0, getHeight(), UiConstants.BG_BOTTOM));
-        g2d.fillRect(0, 0, getWidth(), getHeight());
+        int width = getWidth();
+        int height = getHeight();
+        if (backgroundCache == null || cacheWidth != width || cacheHeight != height) {
+            backgroundCache = new BufferedImage(Math.max(1, width), Math.max(1, height), BufferedImage.TYPE_INT_RGB);
+            Graphics2D bg = backgroundCache.createGraphics();
+            bg.setPaint(new GradientPaint(0, 0, UiConstants.BG_TOP, 0, height, UiConstants.BG_BOTTOM));
+            bg.fillRect(0, 0, width, height);
+            bg.dispose();
+            cacheWidth = width;
+            cacheHeight = height;
+        }
+        g2d.drawImage(backgroundCache, 0, 0, null);
     }
 
     /**
      * 绘制近距离粒子对之间的星座连线（透明度随距离衰减）。
+     * 网格化邻域检测:单元边长=LINK_DISTANCE,任何距离<LINK_DISTANCE的粒子对必在同单元或相邻单元,
+     * 连线结果与全对检测完全一致,仅检测量由O(n²)降为O(n·邻域)。
      *
      * @param g2d 绘图上下文
      */
     private void paintLinks(Graphics2D g2d) {
+        int width = getWidth();
+        int height = getHeight();
+        int cols = Math.max(1, width / UiConstants.LINK_DISTANCE + 1);
+        int rows = Math.max(1, height / UiConstants.LINK_DISTANCE + 1);
+        int cells = cols * rows;
+        if (cellHead == null || cellHead.length < cells) {
+            cellHead = new int[cells];
+        }
+        if (cellNext == null || cellNext.length < particles.size()) {
+            cellNext = new int[particles.size()];
+        }
+        Arrays.fill(cellHead, 0, cells, -1);
+        // 粒子登记进网格桶
+        for (int i = 0; i < particles.size(); i++) {
+            Particle particle = particles.get(i);
+            int col = Math.min(cols - 1, (int) (particle.x / UiConstants.LINK_DISTANCE));
+            int row = Math.min(rows - 1, (int) (particle.y / UiConstants.LINK_DISTANCE));
+            int cell = row * cols + col;
+            cellNext[i] = cellHead[cell];
+            cellHead[cell] = i;
+        }
+        double maxDistSq = (double) UiConstants.LINK_DISTANCE * UiConstants.LINK_DISTANCE;
         for (int i = 0; i < particles.size(); i++) {
             Particle first = particles.get(i);
-            for (int j = i + 1; j < particles.size(); j++) {
-                Particle second = particles.get(j);
-                double dx = first.x - second.x;
-                double dy = first.y - second.y;
-                double distance = Math.hypot(dx, dy);
-                if (distance >= UiConstants.LINK_DISTANCE) {
+            int col = Math.min(cols - 1, (int) (first.x / UiConstants.LINK_DISTANCE));
+            int row = Math.min(rows - 1, (int) (first.y / UiConstants.LINK_DISTANCE));
+            for (int dr = -1; dr <= 1; dr++) {
+                int nr = row + dr;
+                if (nr < 0 || nr >= rows) {
                     continue;
                 }
-                int alpha = (int) (UiConstants.LINK_MAX_ALPHA * (1.0 - distance / UiConstants.LINK_DISTANCE));
-                g2d.setColor(new Color(UiConstants.LINK_COLOR.getRed(), UiConstants.LINK_COLOR.getGreen(),
-                        UiConstants.LINK_COLOR.getBlue(), alpha));
-                g2d.drawLine((int) Math.round(first.x), (int) Math.round(first.y),
-                        (int) Math.round(second.x), (int) Math.round(second.y));
+                for (int dc = -1; dc <= 1; dc++) {
+                    int nc = col + dc;
+                    if (nc < 0 || nc >= cols) {
+                        continue;
+                    }
+                    int neighborCell = nr * cols + nc;
+                    for (int j = cellHead[neighborCell]; j != -1; j = cellNext[j]) {
+                        if (j <= i) {
+                            continue;
+                        }
+                        Particle second = particles.get(j);
+                        double dx = first.x - second.x;
+                        double dy = first.y - second.y;
+                        double distSq = dx * dx + dy * dy;
+                        if (distSq >= maxDistSq) {
+                            continue;
+                        }
+                        int alpha = (int) (UiConstants.LINK_MAX_ALPHA
+                                * (1.0 - Math.sqrt(distSq) / UiConstants.LINK_DISTANCE));
+                        g2d.setColor(LINK_PALETTE[alpha]);
+                        g2d.drawLine((int) Math.round(first.x), (int) Math.round(first.y),
+                                (int) Math.round(second.x), (int) Math.round(second.y));
+                    }
+                }
             }
         }
     }
 
     /**
-     * 绘制粒子（亮度随时间闪烁）。
+     * 绘制粒子（亮度随时间闪烁,使用预渲染精灵贴绘,颜色与几何与AA椭圆填充视觉一致）。
      *
      * @param g2d 绘图上下文
      */
@@ -371,13 +474,66 @@ public class ParticlePanel extends JPanel {
         long now = System.currentTimeMillis();
         for (Particle particle : particles) {
             double twinkle = (Math.sin(now * FULL_TURN / TWINKLE_PERIOD_MS + particle.twinklePhase) + 1.0) / 2.0;
+            // 亮度区间与原实现一致(MIN_BRIGHTNESS..MAX_BRIGHTNESS映射到调色板)
             double brightness = UiConstants.PARTICLE_MIN_BRIGHTNESS
                     + twinkle * (UiConstants.PARTICLE_MAX_BRIGHTNESS - UiConstants.PARTICLE_MIN_BRIGHTNESS);
-            g2d.setColor(blendColor(UiConstants.PARTICLE_DIM, UiConstants.PARTICLE_BRIGHT, brightness));
-            double diameter = particle.radius * 2;
-            g2d.fill(new Ellipse2D.Double(particle.x - particle.radius, particle.y - particle.radius,
-                    diameter, diameter));
+            int bucket = (int) (brightness * (PARTICLE_PALETTE.length - 1) + 0.5);
+            int radiusBucket = (int) ((particle.radius - UiConstants.PARTICLE_MIN_RADIUS) / SPRITE_RADIUS_STEP + 0.5);
+            g2d.drawImage(particleSprite(radiusBucket, bucket),
+                    (int) Math.round(particle.x - particle.radius) - SPRITE_INSET,
+                    (int) Math.round(particle.y - particle.radius) - SPRITE_INSET, null);
         }
+    }
+
+    /**
+     * 取粒子精灵(懒创建:首次使用时预渲染AA椭圆,后续帧仅贴绘)。
+     *
+     * @param radiusBucket 半径桶
+     * @param brightnessBucket 亮度桶
+     * @return 预渲染精灵
+     */
+    private BufferedImage particleSprite(int radiusBucket, int brightnessBucket) {
+        BufferedImage sprite = particleSprites[radiusBucket][brightnessBucket];
+        if (sprite == null) {
+            double radius = UiConstants.PARTICLE_MIN_RADIUS + radiusBucket * SPRITE_RADIUS_STEP;
+            int size = (int) Math.ceil(radius * 2) + SPRITE_INSET * 2;
+            sprite = new BufferedImage(size, size, BufferedImage.TYPE_INT_ARGB);
+            Graphics2D sg = sprite.createGraphics();
+            sg.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            sg.setColor(PARTICLE_PALETTE[brightnessBucket]);
+            sg.fill(new Ellipse2D.Double(SPRITE_INSET, SPRITE_INSET, radius * 2, radius * 2));
+            sg.dispose();
+            particleSprites[radiusBucket][brightnessBucket] = sprite;
+        }
+        return sprite;
+    }
+
+    /**
+     * 构建粒子亮度调色板:PARTICLE_DIM与PARTICLE_BRIGHT之间64级插值。
+     *
+     * @return 调色板
+     */
+    private static Color[] buildParticlePalette() {
+        Color[] palette = new Color[64];
+        for (int i = 0; i < palette.length; i++) {
+            palette[i] = blendColor(UiConstants.PARTICLE_DIM, UiConstants.PARTICLE_BRIGHT,
+                    (double) i / (palette.length - 1));
+        }
+        return palette;
+    }
+
+    /**
+     * 构建连线透明度调色板:alpha 0..LINK_MAX_ALPHA阶梯。
+     *
+     * @return 调色板
+     */
+    private static Color[] buildLinkPalette() {
+        Color[] palette = new Color[UiConstants.LINK_MAX_ALPHA + 1];
+        for (int i = 0; i < palette.length; i++) {
+            palette[i] = new Color(UiConstants.LINK_COLOR.getRed(), UiConstants.LINK_COLOR.getGreen(),
+                    UiConstants.LINK_COLOR.getBlue(), i);
+        }
+        return palette;
     }
 
     /**
