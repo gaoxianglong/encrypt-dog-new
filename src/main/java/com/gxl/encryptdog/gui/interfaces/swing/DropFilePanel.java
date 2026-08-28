@@ -19,6 +19,7 @@
 package com.gxl.encryptdog.gui.interfaces.swing;
 
 import com.gxl.encryptdog.gui.interfaces.swing.constant.UiConstants;
+import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.DefaultListCellRenderer;
 import javax.swing.DefaultListModel;
@@ -64,6 +65,7 @@ import java.util.Objects;
  * @version Id: 1.0.0
  * @since 2026/8/26 15:50
  */
+@Slf4j
 public class DropFilePanel extends JPanel {
     /**
      * 默认字体键
@@ -475,18 +477,28 @@ public class DropFilePanel extends JPanel {
         @SuppressWarnings("unchecked")
         public void drop(DropTargetDropEvent dtde) {
             stopPulse();
-            try {
-                if (!dtde.isDataFlavorSupported(DataFlavor.javaFileListFlavor)) {
-                    dtde.rejectDrop();
-                    return;
-                }
-                dtde.acceptDrop(DnDConstants.ACTION_COPY);
-                List<File> files = (List<File>) dtde.getTransferable().getTransferData(DataFlavor.javaFileListFlavor);
-                dropListener.onFilesDropped(files);
-                startRipple();
-                dtde.dropComplete(true);
-            } catch (Throwable e) {
+            if (!dtde.isDataFlavorSupported(DataFlavor.javaFileListFlavor)) {
+                // rejectDrop仅在acceptDrop之前合法
                 dtde.rejectDrop();
+                return;
+            }
+            dtde.acceptDrop(DnDConstants.ACTION_COPY);
+            boolean success = false;
+            try {
+                List<File> files = (List<File>) dtde.getTransferable().getTransferData(DataFlavor.javaFileListFlavor);
+                if (Objects.isNull(files) || files.isEmpty()) {
+                    // macOS上flavor支持不代表数据可取,粘贴板可能没有文件URL
+                    log.warn("Drop data unavailable, current data flavors: {}", dtde.getCurrentDataFlavorsAsList());
+                } else {
+                    dropListener.onFilesDropped(files);
+                    startRipple();
+                    success = true;
+                }
+            } catch (Exception e) {
+                log.warn("Drop failed, current data flavors: {}", dtde.getCurrentDataFlavorsAsList(), e);
+            } finally {
+                // acceptDrop之后唯一合法收尾是dropComplete,否则原生拖拽会话会卡死
+                dtde.dropComplete(success);
             }
         }
     }
