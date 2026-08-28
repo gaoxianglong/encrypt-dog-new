@@ -43,7 +43,7 @@ import java.awt.event.MouseEvent;
 import java.awt.event.MouseMotionAdapter;
 
 /**
- * 自绘标题栏：应用名称 + 最小化/关闭按钮，支持按住空白处拖拽窗口。
+ * 自绘标题栏：主题背景（渐变顶部色）+ 应用名称 + 最小化/关闭按钮，支持按住空白处拖拽窗口。
  *
  * @author gxl
  * @version Id: 1.0.0
@@ -152,6 +152,21 @@ public class TitleBar extends JPanel {
                 frame.setLocation(locationOnScreen.x - dragOffset.x, locationOnScreen.y - dragOffset.y);
             }
         });
+    }
+
+    /**
+     * 绘制标题栏背景：填充主题背景渐变顶部色，与内容区粒子渐变顶部无缝衔接
+     * （保持setOpaque(false)，显式填充避免开启opaque后Swing优化绘制路径变化）。
+     *
+     * @param g 绘图上下文
+     */
+    @Override
+    protected void paintComponent(Graphics g) {
+        super.paintComponent(g);
+        Graphics2D g2d = (Graphics2D) g.create();
+        g2d.setColor(UiConstants.BG_TOP);
+        g2d.fillRect(0, 0, getWidth(), getHeight());
+        g2d.dispose();
     }
 
     /**

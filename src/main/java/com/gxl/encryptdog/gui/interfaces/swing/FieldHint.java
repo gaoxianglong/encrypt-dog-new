@@ -63,13 +63,14 @@ public class FieldHint extends JComponent {
      */
     private static final int    ARC              = 10;
     /**
-     * 半透明深色背衬(与字段内容重叠时可读),轻量不显重
+     * 半透明深色背衬(与字段内容重叠时可读),轻量不显重,随主色系派生的共享深紫
      */
-    private static final Color  BACKING          = new Color(0x2B, 0x1B, 0x5C, 170);
+    private static final Color  BACKING          = new Color(UiConstants.DEEP_ACCENT.getRed(), UiConstants.DEEP_ACCENT.getGreen(),
+            UiConstants.DEEP_ACCENT.getBlue(), 170);
     /**
      * 提示文字颜色:亮薰衣草紫,主题色系且浅于ACCENT_BRIGHT
      */
-    private static final Color  HINT_FOREGROUND  = new Color(0xC0, 0xB8, 0xFF);
+    private static final Color  HINT_FOREGROUND  = new Color(0xCB, 0xBD, 0xF1);
     /**
      * 默认字体键
      */

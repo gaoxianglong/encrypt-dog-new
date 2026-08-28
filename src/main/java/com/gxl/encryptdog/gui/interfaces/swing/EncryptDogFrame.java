@@ -73,11 +73,11 @@ public class EncryptDogFrame extends JFrame {
     /**
      * 执行页窗口宽(16:10长方形)
      */
-    private static final int     WIDE_WIDTH           = 1200;
+    private static final int     WIDE_WIDTH           = 1400;
     /**
      * 执行页窗口高(加高以容纳约10行文件列表)
      */
-    private static final int     WIDE_HEIGHT          = 800;
+    private static final int     WIDE_HEIGHT          = 880;
     /**
      * 宽屏卡片左右边距
      */
@@ -159,7 +159,7 @@ public class EncryptDogFrame extends JFrame {
         layeredPane.add(copyrightLabel, JLayeredPane.PALETTE_LAYER);
 
         // 执行页返回图标(紧贴窗口标题栏下方,仅执行页展示)
-        homeButton.setIcon(LogoUtil.loadImage(UiConstants.HOME_RESOURCE, 20));
+        homeButton.setIcon(LogoUtil.loadImage(UiConstants.BACK_RESOURCE, 20));
         homeButton.setOpaque(false);
         homeButton.setContentAreaFilled(false);
         homeButton.setBorderPainted(false);

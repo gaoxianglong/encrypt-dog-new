@@ -59,9 +59,9 @@ public final class UiConstants {
      */
     public static final String FILE_EMPTY_RESOURCE      = "file-empty.png";
     /**
-     * 执行页返回图标资源路径
+     * 执行页返回图标资源路径(左向返回箭头)
      */
-    public static final String HOME_RESOURCE            = "home-fill.png";
+    public static final String BACK_RESOURCE            = "back.png";
     /**
      * 执行结果成功图标资源路径
      */
@@ -189,19 +189,19 @@ public final class UiConstants {
     /**
      * 背景渐变结束色
      */
-    public static final Color  BG_BOTTOM                = new Color(0x23104A);
+    public static final Color  BG_BOTTOM                = new Color(0x2B1A52);
     /**
      * 粒子亮色
      */
-    public static final Color  PARTICLE_BRIGHT          = new Color(0xBDC9FF);
+    public static final Color  PARTICLE_BRIGHT          = new Color(0xD5C7F3);
     /**
      * 粒子暗色
      */
-    public static final Color  PARTICLE_DIM             = new Color(0x5A6BD6);
+    public static final Color  PARTICLE_DIM             = new Color(0x8A76C4);
     /**
      * 星座连线颜色
      */
-    public static final Color  LINK_COLOR               = new Color(0x6C7BFF);
+    public static final Color  LINK_COLOR               = new Color(0x9D89DC);
     /**
      * 卡片填充色（半透明白）
      */
@@ -217,11 +217,35 @@ public final class UiConstants {
     /**
      * 主题强调色
      */
-    public static final Color  ACCENT                   = new Color(0x6C63FF);
+    public static final Color  ACCENT                   = new Color(0xAF97E5);
     /**
      * 主题强调亮色
      */
-    public static final Color  ACCENT_BRIGHT            = new Color(0x8E7BFF);
+    public static final Color  ACCENT_BRIGHT            = new Color(0xB49CF4);
+    /**
+     * 深紫底共享色(提示浮层背衬与执行页行条,随主色系派生)
+     */
+    public static final Color  DEEP_ACCENT              = new Color(0x3A2A66);
+    /**
+     * 进度条马赛克渐变:乳白
+     */
+    public static final Color  MOSAIC_MILK              = new Color(0xF2EFE9);
+    /**
+     * 进度条马赛克渐变:灰
+     */
+    public static final Color  MOSAIC_GRAY              = new Color(0x9A9A9A);
+    /**
+     * 进度条马赛克渐变:淡紫
+     */
+    public static final Color  MOSAIC_LPUR              = new Color(0xB8A0E8);
+    /**
+     * 进度条马赛克渐变:紫
+     */
+    public static final Color  MOSAIC_PUR               = new Color(0x7A5FA8);
+    /**
+     * 进度条轨道色
+     */
+    public static final Color  MOSAIC_TRACK             = new Color(0x333333);
     /**
      * 错误红色
      */
@@ -230,10 +254,6 @@ public final class UiConstants {
      * 成功绿色
      */
     public static final Color  SUCCESS_GREEN            = new Color(0x52D39B);
-    /**
-     * 标题栏背景色
-     */
-    public static final Color  TITLE_BAR_BG             = new Color(0x10102A);
     /**
      * 标题栏按钮悬停色
      */
@@ -257,7 +277,7 @@ public final class UiConstants {
     /**
      * 禁用按钮背景色
      */
-    public static final Color  BUTTON_DISABLED          = new Color(0x4A4A6E);
+    public static final Color  BUTTON_DISABLED          = new Color(0x5B5478);
 
     private UiConstants() {
     }

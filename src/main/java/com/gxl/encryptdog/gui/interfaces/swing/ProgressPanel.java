@@ -29,18 +29,22 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.SwingConstants;
+import javax.swing.Timer;
 import javax.swing.UIManager;
 import java.awt.Color;
 import java.awt.Font;
 import java.awt.FontMetrics;
-import java.awt.GradientPaint;
 import java.awt.Point;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.RenderingHints;
+import java.awt.Shape;
+import java.awt.geom.RoundRectangle2D;
 import java.awt.event.ActionListener;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 
 /**
  * 执行表格页:第一层操作标题(操作中→操作完成,白色、字号与首页标题一致),
@@ -72,7 +76,7 @@ public class ProgressPanel extends JPanel {
     /**
      * 行高
      */
-    private static final int      ROW_H            = 40;
+    private static final int      ROW_H            = 46;
     /**
      * 行间垂直间距
      */
@@ -87,13 +91,13 @@ public class ProgressPanel extends JPanel {
     private static final String[] COLUMNS          = { "No", "Source File", "Before Size", "After Size", "State",
             "Progress", "Estimated Time", "Target File", "Result" };
     /**
-     * 列表列宽比(总和1066,按面板可用宽度等比缩放)
+     * 列表列宽比(总和1151,按面板可用宽度等比缩放;进度列加宽承载马赛克进度条与百分比文本,Source/Target收敛让出空间)
      */
-    private static final int[]    COLUMN_RATIOS    = { 36, 230, 85, 85, 75, 140, 85, 230, 100 };
+    private static final int[]    COLUMN_RATIOS    = { 36, 195, 80, 80, 75, 300, 80, 195, 110 };
     /**
      * 列表列宽比总和
      */
-    private static final int      RATIO_TOTAL      = 1066;
+    private static final int      RATIO_TOTAL      = 1151;
     /**
      * 状态文本(与核心EncryptStateEnum定义的状态一致)
      */
@@ -162,6 +166,14 @@ public class ProgressPanel extends JPanel {
      * 行数据快照
      */
     private final List<RowData>   rows             = new ArrayList<>();
+    /**
+     * 马赛克脉冲动画相位
+     */
+    private float                 phase;
+    /**
+     * 马赛克脉冲动画时钟(33ms,仅执行页停留期间运行)
+     */
+    private final Timer           pulseTimer;
 
     public ProgressPanel(ActionListener backListener) {
         setOpaque(false);
@@ -193,6 +205,15 @@ public class ProgressPanel extends JPanel {
         scrollPane.getVerticalScrollBar().setUnitIncrement(ROW_H + ROW_GAP);
         add(scrollPane);
 
+        // 马赛克脉冲动画时钟:推进共享相位与各行缓动追赶,并仅重绘行区,所有行进度条共用
+        pulseTimer = new Timer(33, e -> {
+            phase += 0.14F;
+            for (var row : rows) {
+                row.bar.tick();
+            }
+            rowsPanel.repaint();
+        });
+
         // 顶部隐形拖拽区:窗口标题栏在执行页隐藏,顶部34px仍可拖动窗口
         addMouseListener(new java.awt.event.MouseAdapter() {
             @Override
@@ -218,6 +239,15 @@ public class ProgressPanel extends JPanel {
     }
 
     /**
+     * 面板脱离卡片(返回表单/窗口关闭)时停止脉冲动画,避免表单页空转
+     */
+    @Override
+    public void removeNotify() {
+        pulseTimer.stop();
+        super.removeNotify();
+    }
+
+    /**
      * 进入执行表格页:清空旧行,立即展示标题、统计小窗与全部文件行占位
      * @param operation 操作类型,ENCRYPT/DECRYPT
      * @param algorithm 加密算法
@@ -226,6 +256,7 @@ public class ProgressPanel extends JPanel {
     public void begin(String operation, String algorithm, List<String> files) {
         beginMs = System.currentTimeMillis();
         finished = false;
+        pulseTimer.start();
         // 清空上一轮操作残留的行数据(修复重复行bug)
         rows.clear();
         operationName = "ENCRYPT".equals(operation) ? "Encrypt" : "Decrypt";
@@ -251,6 +282,11 @@ public class ProgressPanel extends JPanel {
         if (finished) {
             return;
         }
+        // 按源文件路径原地更新:保留已有行及其进度条实例(动画状态不丢失),新增缺失行、移除消失行
+        var bySource = new HashMap<String, RowData>();
+        for (var row : rows) {
+            bySource.put(row.source, row);
+        }
         rows.clear();
         int success = 0;
         int failed = 0;
@@ -260,9 +296,24 @@ public class ProgressPanel extends JPanel {
             } else if ("FAILED".equals(fp.getResult())) {
                 failed++;
             }
-            rows.add(new RowData(0, fp.getSourceFile(), fp.getSourceFileSize(), fp.getTargetFileSize(),
-                    resolveStatus(fp), fp.getProgress(), fp.getEstimatedTime(), fp.getTargetFile(),
-                    "-".equals(fp.getResult()) ? "-" : fp.getResult()));
+            var row = bySource.get(fp.getSourceFile());
+            if (row == null) {
+                row = new RowData(0, fp.getSourceFile(), fp.getSourceFileSize(), fp.getTargetFileSize(),
+                        resolveStatus(fp), fp.getProgress(), fp.getEstimatedTime(), fp.getTargetFile(),
+                        "-".equals(fp.getResult()) ? "-" : fp.getResult());
+            } else {
+                row.no = 0;
+                row.before = fp.getSourceFileSize();
+                row.after = fp.getTargetFileSize();
+                row.state = resolveStatus(fp);
+                row.progress = fp.getProgress();
+                row.eta = fp.getEstimatedTime();
+                row.target = fp.getTargetFile();
+                row.result = "-".equals(fp.getResult()) ? "-" : fp.getResult();
+                // 目标进度更新,缓动动画自动追赶
+                row.bar.setTarget(parsePercent(row.progress));
+            }
+            rows.add(row);
         }
         // 按状态排序:进行中 > 等待中 > 已完成,序号随排序重排
         rows.sort((a, b) -> Integer.compare(statePriority(a.state), statePriority(b.state)));
@@ -309,6 +360,8 @@ public class ProgressPanel extends JPanel {
                     row.target = fr.getTargetFile();
                     row.result = fr.getResult();
                     row.errorMsg = fr.getErrorMsg();
+                    // 目标进度更新(成功100%平滑填满/失败停留),缓动动画追赶
+                    row.bar.setTarget(parsePercent(row.progress));
                     break;
                 }
             }
@@ -352,6 +405,30 @@ public class ProgressPanel extends JPanel {
     }
 
     /**
+     * 状态展示映射:首字母大写、其余小写(仅作用于单元格展示,排序与配色仍按原始值判断)
+     * @param state 内部状态值
+     * @return 展示文本
+     */
+    private static String displayState(String state) {
+        if (state == null || state.isBlank()) {
+            return state;
+        }
+        return state.substring(0, 1).toUpperCase(Locale.ROOT) + state.substring(1).toLowerCase(Locale.ROOT);
+    }
+
+    /**
+     * 百分比归一化:未产生进度(进度为 -/空白)时显示 0%(等待行与失败前的行),其余原样展示
+     * @param progress 进度文本
+     * @return 展示文本
+     */
+    private static String resolvePercent(String progress) {
+        if (progress == null || progress.isBlank() || "-".equals(progress)) {
+            return "0%";
+        }
+        return progress;
+    }
+
+    /**
      * 已执行秒数
      * @return
      */
@@ -385,7 +462,7 @@ public class ProgressPanel extends JPanel {
         headerPanel.removeAll();
         for (int i = 0; i < COLUMNS.length; i++) {
             JLabel head = new JLabel(COLUMNS[i]);
-            head.setForeground(UiConstants.TEXT_SECONDARY);
+            head.setForeground(UiConstants.TEXT_PRIMARY);
             head.setFont(UIManager.getFont(DEFAULT_FONT_KEY).deriveFont(Font.BOLD, 11F));
             // 表头文字全部居中对齐
             head.setHorizontalAlignment(SwingConstants.CENTER);
@@ -419,7 +496,7 @@ public class ProgressPanel extends JPanel {
         row.setBounds(0, y, getWidth() - PADDING * 2, ROW_H);
 
         JLabel noLabel = cellLabel(String.valueOf(data.no), UiConstants.TEXT_SECONDARY, SwingConstants.CENTER, layout, 0);
-        JLabel sourceLabel = cellLabel(ellipsis(data.source, layout[3], UIManager.getFont(DEFAULT_FONT_KEY)
+        JLabel sourceLabel = cellLabel(shearToFit(data.source, layout[3], UIManager.getFont(DEFAULT_FONT_KEY)
                 .deriveFont(Font.PLAIN, 12F)), UiConstants.TEXT_PRIMARY, SwingConstants.LEFT, layout, 1);
         sourceLabel.setToolTipText(data.source);
         JLabel beforeLabel = cellLabel(data.before, UiConstants.TEXT_SECONDARY, SwingConstants.CENTER, layout, 2);
@@ -431,14 +508,22 @@ public class ProgressPanel extends JPanel {
         } else if (STATUS_WAITING.equals(data.state)) {
             stateColor = UiConstants.TEXT_SECONDARY;
         }
-        JLabel stateLabel = cellLabel(data.state, stateColor, SwingConstants.CENTER, layout, 4);
+        JLabel stateLabel = cellLabel(displayState(data.state), stateColor, SwingConstants.CENTER, layout, 4);
 
-        GradientBar bar = new GradientBar(parsePercent(data.progress));
-        bar.setBounds(layout[10] + 8, (ROW_H - 10) / 2, layout[11] - 16, 10);
+        // 复用行内进度条实例(动画状态随行保留),固定253×12(照搬示例数值),百分比标签紧贴条右端
+        MosaicBar bar = data.bar;
+        bar.setBounds(layout[10] + 8, (ROW_H - 12) / 2, 253, 12);
         row.add(bar);
+        // 进度条右侧百分比文本(紧贴条右端;未产生进度显示0%)
+        JLabel percentLabel = new JLabel(resolvePercent(data.progress));
+        percentLabel.setForeground(UiConstants.TEXT_SECONDARY);
+        percentLabel.setFont(UIManager.getFont(DEFAULT_FONT_KEY).deriveFont(Font.PLAIN, 12F));
+        percentLabel.setHorizontalAlignment(SwingConstants.LEFT);
+        percentLabel.setBounds(layout[10] + 265, 0, 50, ROW_H);
+        row.add(percentLabel);
 
         JLabel etaLabel = cellLabel(data.eta, UiConstants.TEXT_SECONDARY, SwingConstants.CENTER, layout, 6);
-        JLabel targetLabel = cellLabel(ellipsis(data.target, layout[15], UIManager.getFont(DEFAULT_FONT_KEY)
+        JLabel targetLabel = cellLabel(shearToFit(data.target, layout[15], UIManager.getFont(DEFAULT_FONT_KEY)
                 .deriveFont(Font.PLAIN, 12F)), UiConstants.TEXT_PRIMARY, SwingConstants.LEFT, layout, 7);
         targetLabel.setToolTipText(data.target);
 
@@ -497,13 +582,13 @@ public class ProgressPanel extends JPanel {
     }
 
     /**
-     * 超长文本省略号截断
+     * 终端风格截断:超出可用宽度时丢弃前段、前缀 "...",末尾字符完整显示
      * @param text 原文
      * @param width 可用宽度
      * @param font 字体
      * @return 截断后文本
      */
-    private String ellipsis(String text, int width, Font font) {
+    private String shearToFit(String text, int width, Font font) {
         if (text == null) {
             return "";
         }
@@ -511,11 +596,12 @@ public class ProgressPanel extends JPanel {
         if (metrics.stringWidth(text) <= width - 12) {
             return text;
         }
+        String prefix = "...";
         String result = text;
-        while (result.length() > 1 && metrics.stringWidth(result + "…") > width - 12) {
-            result = result.substring(0, result.length() - 1);
+        while (result.length() > 1 && metrics.stringWidth(prefix + result) > width - 12) {
+            result = result.substring(1);
         }
-        return result + "…";
+        return prefix + result;
     }
 
     /**
@@ -558,7 +644,7 @@ public class ProgressPanel extends JPanel {
     /**
      * 行数据快照
      */
-    private static final class RowData {
+    private final class RowData {
         /**
          * 序号(排序后重排)
          */
@@ -570,7 +656,7 @@ public class ProgressPanel extends JPanel {
         /**
          * 处理前大小
          */
-        private final String before;
+        private String       before;
         /**
          * 处理后大小
          */
@@ -586,7 +672,7 @@ public class ProgressPanel extends JPanel {
         /**
          * 预计时间
          */
-        private final String eta;
+        private String       eta;
         /**
          * 目标文件
          */
@@ -599,6 +685,10 @@ public class ProgressPanel extends JPanel {
          * 失败原因
          */
         private String       errorMsg;
+        /**
+         * 行内进度条实例(跨快照复用,保留缓动动画状态)
+         */
+        private final MosaicBar bar;
 
         RowData(int no, String source, String before, String after, String state, String progress, String eta,
                 String target, String result) {
@@ -611,11 +701,12 @@ public class ProgressPanel extends JPanel {
             this.eta = eta;
             this.target = target;
             this.result = result;
+            this.bar = new MosaicBar(parsePercent(progress));
         }
     }
 
     /**
-     * 表头背景:与主题同源的半透明深紫圆角条
+     * 表头背景:主色系半透明深紫(四色渐变紫段)圆角条
      */
     private static final class HeaderBand extends JPanel {
         /**
@@ -632,7 +723,8 @@ public class ProgressPanel extends JPanel {
             super.paintComponent(g);
             Graphics2D g2d = (Graphics2D) g.create();
             g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-            g2d.setColor(new Color(0x2B, 0x1B, 0x5C, 150));
+            g2d.setColor(new Color(UiConstants.MOSAIC_PUR.getRed(), UiConstants.MOSAIC_PUR.getGreen(),
+                    UiConstants.MOSAIC_PUR.getBlue(), 150));
             g2d.fillRoundRect(0, 0, getWidth(), getHeight(), ARC, ARC);
             g2d.dispose();
         }
@@ -664,17 +756,45 @@ public class ProgressPanel extends JPanel {
     }
 
     /**
-     * 紫色渐变进度条(无颗粒装饰)
+     * 四色马赛克进度条:乳白→灰→淡紫→紫渐变方格、每格确定性相位明灭脉冲、圆角深色轨道、填充随进度
      */
-    private static final class GradientBar extends JComponent {
+    private final class MosaicBar extends JComponent {
         /**
-         * 进度值(0-100)
+         * 四色渐变采样级数
          */
-        private final int percent;
+        private static final int RAMP_LEVELS = 8;
+        /**
+         * 快照目标进度(0-100)
+         */
+        private float target;
+        /**
+         * 当前显示进度(0-100,缓动追赶target)
+         */
+        private float display;
 
-        GradientBar(int percent) {
-            this.percent = percent;
+        MosaicBar(int percent) {
+            this.target = percent;
+            this.display = percent;
             setOpaque(false);
+        }
+
+        /**
+         * 更新目标进度(快照变化时调用)
+         * @param percent
+         */
+        void setTarget(int percent) {
+            this.target = percent;
+        }
+
+        /**
+         * 缓动追赶一帧:指数平滑先快后慢,差值小于0.5直接归位避免永动
+         */
+        void tick() {
+            if (Math.abs(target - display) < 0.5F) {
+                display = target;
+                return;
+            }
+            display += (target - display) * 0.12F;
         }
 
         @Override
@@ -683,18 +803,81 @@ public class ProgressPanel extends JPanel {
             Graphics2D g2d = (Graphics2D) g.create();
             g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
             int height = getHeight();
-            int width = getWidth();
-            // 背景轨道
-            g2d.setColor(new Color(255, 255, 255, 24));
-            g2d.fillRoundRect(0, 0, width, height, height, height);
-            // 紫色渐变填充
-            int fillWidth = (int) ((double) percent / 100 * width);
-            if (fillWidth > 0) {
-                g2d.setPaint(new GradientPaint(0, 0, UiConstants.ACCENT, fillWidth, 0, UiConstants.ACCENT_BRIGHT));
-                g2d.fillRoundRect(0, 0, fillWidth, height, height, height);
+            // 轨道固定253px宽(照搬示例TRACK_END-SLIDER_X=253),自左端起
+            int trackW = 253;
+            RoundRectangle2D track = new RoundRectangle2D.Double(0, 0, trackW, height, height, height);
+            g2d.setColor(UiConstants.MOSAIC_TRACK);
+            g2d.fill(track);
+            if (display <= 0) {
+                g2d.dispose();
+                return;
             }
+            // 马赛克方格:边长=条高/2、1px缝,裁剪于圆角轨道内保持圆角,仅绘制填充区内方格
+            Color[] ramp = fourColorRamp();
+            int cell = height / 2;
+            int rows = height / cell;
+            int fillEnd = (int) ((double) display / 100 * trackW);
+            Shape oldClip = g2d.getClip();
+            g2d.setClip(track);
+            Object oldAA = g2d.getRenderingHint(RenderingHints.KEY_ANTIALIASING);
+            g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_OFF);
+            for (int cx = 0; cx < fillEnd; cx += cell) {
+                double t = (double) cx / trackW;
+                for (int row = 0; row < rows; row++) {
+                    // 每格独立确定性相位围绕四色渐变位置明灭,不闪烁
+                    double pulse = Math.sin(phase + hash(cx / cell, row) * Math.PI * 2);
+                    int lv = (int) Math.round(t * (RAMP_LEVELS - 1) + pulse * 2.0);
+                    lv = Math.max(0, Math.min(RAMP_LEVELS - 1, lv));
+                    g2d.setColor(ramp[lv]);
+                    int w = Math.min(cell - 1, fillEnd - cx);
+                    g2d.fillRect(cx, row * cell, w, cell - 1);
+                }
+            }
+            g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, oldAA);
+            g2d.setClip(oldClip);
             g2d.dispose();
         }
+    }
+
+    /**
+     * 四色渐变采样:乳白→灰→淡紫→紫,乳白只占最左一小段
+     * @return 8级色阶
+     */
+    private static Color[] fourColorRamp() {
+        Color[] stops = { UiConstants.MOSAIC_MILK, UiConstants.MOSAIC_GRAY, UiConstants.MOSAIC_LPUR, UiConstants.MOSAIC_PUR };
+        float[] pos = { 0F, 0.12F, 0.40F, 0.70F };
+        Color[] ramp = new Color[8];
+        for (int i = 0; i < ramp.length; i++) {
+            double t = i / 7.0;
+            int s = (t <= pos[1]) ? 0 : (t <= pos[2]) ? 1 : 2;
+            double tt = (t - pos[s]) / (pos[s + 1] - pos[s]);
+            ramp[i] = lerpColor(stops[s], stops[s + 1], Math.max(0, Math.min(1, tt)));
+        }
+        return ramp;
+    }
+
+    /**
+     * 颜色线性插值
+     * @param a 起始色
+     * @param b 结束色
+     * @param t 比例
+     * @return 插值色
+     */
+    private static Color lerpColor(Color a, Color b, double t) {
+        return new Color((int) (a.getRed() + (b.getRed() - a.getRed()) * t),
+                (int) (a.getGreen() + (b.getGreen() - a.getGreen()) * t),
+                (int) (a.getBlue() + (b.getBlue() - a.getBlue()) * t));
+    }
+
+    /**
+     * 确定性伪随机(保证格子明灭相位稳定不闪烁)
+     * @param x 列索引
+     * @param y 行索引
+     * @return 0..1
+     */
+    private static double hash(int x, int y) {
+        double s = Math.sin(x * 127.1 + y * 311.7) * 43758.5453;
+        return s - Math.floor(s);
     }
 
     /**
