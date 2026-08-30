@@ -20,11 +20,13 @@ package com.gxl.encryptdog.core.operation.impl.decrypt;
 
 import com.gxl.encryptdog.base.enums.ChannelEnum;
 import com.gxl.encryptdog.base.error.DecryptException;
+import com.gxl.encryptdog.base.error.OperationException;
 import com.gxl.encryptdog.core.event.observer.ObServerContext;
 import com.gxl.encryptdog.core.operation.AbstractDecrypt;
 import com.gxl.encryptdog.core.operation.type.TripleDes;
 
 import javax.crypto.Cipher;
+import javax.crypto.SecretKey;
 import javax.crypto.spec.IvParameterSpec;
 
 /**
@@ -45,18 +47,30 @@ public class TripleDesDecrypt extends AbstractDecrypt implements TripleDes {
     }
 
     /**
+     * 构建派生密钥,每文件仅派生一次
+     * @param secretKey
+     * @return
+     * @throws OperationException
+     */
+    @Override
+    protected SecretKey buildKey(char[] secretKey) throws OperationException {
+        return getGenerateKey(secretKey);
+    }
+
+    /**
      * 数据解密操作
      * @param content
      * @param secretKey
+     * @param keySpec 派生密钥,每文件仅派生一次
      * @param iv
      * @return
      * @throws DecryptException
      */
     @Override
-    public byte[] dataDecrypt(byte[] content, char[] secretKey, byte[] iv) throws DecryptException {
+    public byte[] dataDecrypt(byte[] content, char[] secretKey, SecretKey keySpec, byte[] iv) throws DecryptException {
         try {
             var dc = Cipher.getInstance(CIPHER_ALGORITHM);
-            dc.init(Cipher.DECRYPT_MODE, getGenerateKey(secretKey), new IvParameterSpec(iv));
+            dc.init(Cipher.DECRYPT_MODE, keySpec, new IvParameterSpec(iv));
             return dc.doFinal(content);
         } catch (Throwable e) {
             throw new DecryptException("The key is incorrect,Try Again", e);

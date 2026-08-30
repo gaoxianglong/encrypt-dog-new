@@ -9,6 +9,7 @@ import com.gxl.encryptdog.core.operation.EncryptContext;
 import com.gxl.encryptdog.core.operation.type.Aes;
 
 import javax.crypto.Cipher;
+import javax.crypto.SecretKey;
 import javax.crypto.spec.IvParameterSpec;
 import java.security.SecureRandom;
 
@@ -25,20 +26,30 @@ public class AesEncrypt extends AbstractEncrypt implements Aes {
     }
 
     /**
+     * 构建派生密钥,每文件仅派生一次
+     * @param secretKey
+     * @return
+     * @throws OperationException
+     */
+    @Override
+    protected SecretKey buildKey(char[] secretKey) throws OperationException {
+        return getGenerateKey(secretKey);
+    }
+
+    /**
      * 数据加密操作
      * @param content
      * @param secretKey
+     * @param keySpec 派生密钥,每文件仅派生一次
      * @param iv
      * @return
      * @throws EncryptException
      */
     @Override
-    public byte[] dataEncrypt(byte[] content, char[] secretKey, byte[] iv) throws EncryptException {
+    public byte[] dataEncrypt(byte[] content, char[] secretKey, SecretKey keySpec, byte[] iv) throws EncryptException {
         try {
-            // 获取秘钥key
-            var key = getGenerateKey(secretKey);
             var cipher = Cipher.getInstance(CIPHER_ALGORITHM);
-            cipher.init(Cipher.ENCRYPT_MODE, key, new IvParameterSpec(iv));
+            cipher.init(Cipher.ENCRYPT_MODE, keySpec, new IvParameterSpec(iv));
 
             // 执行数据加密
             return cipher.doFinal(content);

@@ -295,8 +295,10 @@ public abstract class AbstractOperationTemplate implements OperationStrategy {
     private void onlyLocal(EncryptContext encryptContext) throws EncryptException, IOException {
         // 最高安全性-目标文件的文件头绑定物理设备id和fileid
         bind(encryptContext);
-        // 最高安全性-创建随机秘钥文件
-        createSecretkeyFile();
+        // 最高安全性-创建随机秘钥文件,仅加密操作执行,解密时缺失直接走「记录缺失」错误路径(D8)
+        if (encryptContext.getOperationVO().isEncrypt()) {
+            createSecretkeyFile();
+        }
     }
 
     /**

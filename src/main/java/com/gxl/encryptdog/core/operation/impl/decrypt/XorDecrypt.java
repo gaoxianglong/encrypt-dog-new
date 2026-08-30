@@ -9,6 +9,8 @@ import com.gxl.encryptdog.core.operation.EncryptContext;
 import com.gxl.encryptdog.core.operation.type.Xor;
 import com.gxl.encryptdog.utils.Utils;
 
+import javax.crypto.SecretKey;
+
 /**
  * XOR解密
  *
@@ -30,12 +32,13 @@ public class XorDecrypt extends AbstractDecrypt implements Xor {
      * 数据解密操作
      * @param content
      * @param secretKey
+     * @param keySpec XOR不使用派生密钥,直接使用秘钥字节
      * @param iv
      * @return
      * @throws DecryptException
      */
     @Override
-    public byte[] dataDecrypt(byte[] content, char[] secretKey, byte[] iv) throws DecryptException {
+    public byte[] dataDecrypt(byte[] content, char[] secretKey, SecretKey keySpec, byte[] iv) throws DecryptException {
         try {
             var rlt = new byte[content.length];
             // 将密钥转换为字节数组

@@ -9,6 +9,8 @@ import com.gxl.encryptdog.core.operation.EncryptContext;
 import com.gxl.encryptdog.core.operation.type.Xor;
 import com.gxl.encryptdog.utils.Utils;
 
+import javax.crypto.SecretKey;
+
 /**
  * XOR加密
  *
@@ -25,12 +27,13 @@ public class XorEncrypt extends AbstractEncrypt implements Xor {
      * 数据加密操作
      * @param content
      * @param secretKey
+     * @param keySpec XOR不使用派生密钥,直接使用秘钥字节
      * @param iv
      * @return
      * @throws EncryptException
      */
     @Override
-    public byte[] dataEncrypt(byte[] content, char[] secretKey, byte[] iv) throws EncryptException {
+    public byte[] dataEncrypt(byte[] content, char[] secretKey, SecretKey keySpec, byte[] iv) throws EncryptException {
         // 声明加密后的结果集
         var rlt = new byte[content.length];
         // 将密钥转换为字节数组

@@ -28,9 +28,12 @@ import com.gxl.encryptdog.core.event.ResultEvent;
 import com.gxl.encryptdog.core.event.observer.ObServerContext;
 import com.gxl.encryptdog.core.shell.command.HardwareCommand;
 import com.gxl.encryptdog.core.shell.command.impl.HardwareCommandImpl;
+import com.gxl.encryptdog.utils.SecretKeyEntry;
 import com.gxl.encryptdog.utils.Utils;
 
+import javax.crypto.SecretKey;
 import java.io.BufferedInputStream;
+import java.io.File;
 import java.io.FileInputStream;
 import java.util.Objects;
 import java.util.Properties;
@@ -147,7 +150,12 @@ public abstract class AbstractDecrypt extends AbstractOperationTemplate {
             // 读取hardwareUUID
             in.read(hardware);
             var uuid = new String(Utils.toBase64Decode(hardware), Charsets.UTF_8);
-            if (!command.getHardwareId().equals(uuid)) {
+            var currentHardwareId = command.getHardwareId();
+            if (Objects.isNull(currentHardwareId)) {
+                // 硬件id获取失败fail-loud,替代原有NPE路径(D5)
+                throw new EncryptException("Unable to obtain the hardware id, please check the operating system environment.");
+            }
+            if (!currentHardwareId.equals(uuid)) {
                 throw new OperationException("The UUID does not match,Please decrypt on the same physical device");
             }
             var fileId = new byte[FILE_ID_BYTES];
@@ -180,6 +188,13 @@ public abstract class AbstractDecrypt extends AbstractOperationTemplate {
         var isFirst = true;
         // 任务的开始时间
         var begin = System.currentTimeMillis();
+        // 密钥派生每文件仅一次,各数据块复用同一派生密钥,不改变派生结果字节(D7)
+        SecretKey keySpec;
+        try {
+            keySpec = buildKey(encryptContext.getOperationVO().getSecretKey());
+        } catch (OperationException e) {
+            throw new EncryptException(e);
+        }
         try {
             while ((len = in.read(content)) != -1) {
                 // 当前容量计算
@@ -190,7 +205,7 @@ public abstract class AbstractDecrypt extends AbstractOperationTemplate {
                     content = temp;
                 }
                 // 获取解密后的数据
-                var decryptData = dataDecrypt(content, encryptContext.getOperationVO().getSecretKey(), encryptContext.getOperationVO().getIv());
+                var decryptData = dataDecrypt(content, encryptContext.getOperationVO().getSecretKey(), keySpec, encryptContext.getOperationVO().getIv());
                 out.write(decryptData, 0, decryptData.length);
                 out.flush();
 
@@ -237,18 +252,27 @@ public abstract class AbstractDecrypt extends AbstractOperationTemplate {
      * @throws OperationException
      */
     public void restoreKey(long fileId, OperationVO operationVO) throws OperationException {
-        try (var in = new BufferedInputStream(new FileInputStream(SECRET_KEY_FILE))) {
+        var storeFile = new File(SECRET_KEY_FILE);
+        // 密钥存储文件缺失时fail-loud,不再静默继续(D5)
+        if (!storeFile.exists()) {
+            throw new OperationException(
+                String.format("The secret key record file is missing:%s, the -o file cannot be decrypted.", SECRET_KEY_FILE));
+        }
+        try (var in = new BufferedInputStream(new FileInputStream(storeFile))) {
             var properties = new Properties();
             properties.load(in);
             var key = String.valueOf(fileId);
-            // 获取随机秘钥
-            var rsk = properties.getProperty(key);
-            if (Objects.isNull(rsk)) {
-                return;
+            // 获取随机秘钥条目
+            var entry = properties.getProperty(key);
+            // 记录缺失时fail-loud,不再静默继续(D5)
+            if (Objects.isNull(entry)) {
+                throw new OperationException("The secret key record for this file is missing, the -o file cannot be decrypted.");
             }
-            // 使用原秘钥解密对应的随机秘钥
-            var sk = dataDecrypt(rsk.getBytes(Charsets.UTF_8), operationVO.getSecretKey(), operationVO.getIv());
-            operationVO.setSecretKey(new String(sk, Charsets.UTF_8).toCharArray());
+            // 使用原秘钥解密条目,GCM tag校验失败报密码错误,损坏条目明确提示重新加密(D1/D5)
+            var sk = SecretKeyEntry.decryptEntry(operationVO.getSecretKey(), entry);
+            operationVO.setSecretKey(sk.toCharArray());
+        } catch (OperationException e) {
+            throw e;
         } catch (Throwable e) {
             throw new OperationException(e.getMessage(), e);
         }
@@ -258,11 +282,22 @@ public abstract class AbstractDecrypt extends AbstractOperationTemplate {
      * 数据解密操作
      * @param content
      * @param secretKey
+     * @param keySpec 派生密钥,每文件仅派生一次
      * @param iv
      * @return
      * @throws DecryptException
      */
-    protected abstract byte[] dataDecrypt(byte[] content, char[] secretKey, byte[] iv) throws DecryptException;
+    protected abstract byte[] dataDecrypt(byte[] content, char[] secretKey, SecretKey keySpec, byte[] iv) throws DecryptException;
+
+    /**
+     * 构建派生密钥,每文件仅调用一次;XOR等无派生密钥的算法返回null
+     * @param secretKey
+     * @return
+     * @throws OperationException
+     */
+    protected SecretKey buildKey(char[] secretKey) throws OperationException {
+        return null;
+    }
 
     /**
      * 构建EstimatedTimeEvent
