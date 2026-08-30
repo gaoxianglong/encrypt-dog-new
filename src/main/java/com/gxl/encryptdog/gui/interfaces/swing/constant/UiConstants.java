@@ -81,7 +81,7 @@ public final class UiConstants {
     /**
      * 窗口高度（逻辑像素）
      */
-    public static final int    WINDOW_HEIGHT            = 760;
+    public static final int    WINDOW_HEIGHT            = 798;
     /**
      * 标题栏高度（逻辑像素）
      */
@@ -97,7 +97,7 @@ public final class UiConstants {
     /**
      * 卡片高度
      */
-    public static final int    CARD_HEIGHT              = 600;
+    public static final int    CARD_HEIGHT              = 638;
     /**
      * 卡片圆角半径
      */
