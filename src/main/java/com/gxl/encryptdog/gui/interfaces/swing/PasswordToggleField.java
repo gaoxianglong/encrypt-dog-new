@@ -75,6 +75,8 @@ public class PasswordToggleField extends JPanel {
         toggleButton.setContentAreaFilled(false);
         toggleButton.setBorderPainted(false);
         toggleButton.setFocusPainted(false);
+        // 眼睛按钮不参与Tab焦点遍历:仅鼠标触发,避免Tab第一下落在按钮上导致密码框需两次Tab才离开
+        toggleButton.setFocusable(false);
         toggleButton.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         toggleButton.addActionListener(new ActionListener() {
             @Override

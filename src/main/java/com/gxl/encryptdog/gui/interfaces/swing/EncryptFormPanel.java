@@ -260,6 +260,8 @@ public class EncryptFormPanel extends JPanel {
         targetBox.add(targetPathField, BorderLayout.CENTER);
         JButton browseButton = createSmallButton("Browse…");
         browseButton.setPreferredSize(new Dimension(98, UiConstants.INPUT_HEIGHT));
+        // Browse按钮不参与Tab焦点遍历:仅鼠标触发,与密码框眼睛按钮同一约定,保证Tab从目标目录框一步直达下一控件
+        browseButton.setFocusable(false);
         browseButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
