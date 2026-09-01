@@ -24,6 +24,8 @@ import com.gxl.encryptdog.gui.application.dto.EncryptFormDTO;
 import com.gxl.encryptdog.gui.interfaces.swing.tray.TrayDaemon;
 import picocli.CommandLine;
 
+import java.io.File;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Objects;
@@ -40,16 +42,22 @@ public class Starter {
      * GUI模式参数
      */
     private static final String GUI_OPTION = "--gui";
+    /**
      * 托盘守护模式参数(内部使用,由GUI启动时自动拉起)
+     */
     private static final String TRAY_OPTION = "--tray";
 
     public static void main(String[] args) {
         // 托盘守护模式路由:仅挂载菜单栏图标,不建窗口、不解析picocli
         if (Arrays.asList(args).contains(TRAY_OPTION)) {
             TrayDaemon.main(args);
+            return;
+        }
         // GUI模式路由:剥离--gui参数后启动Swing图形界面
         var prefill = parseGuiArgs(args);
         if (Objects.nonNull(prefill)) {
+            // AWT初始化前预置Dock图标,消除启动期Java默认咖啡杯闪现
+            preinstallDockIcon();
             EncryptDogGui.launch(prefill);
             return;
         }
@@ -119,5 +127,28 @@ public class Starter {
      */
     private static String nextArg(String[] args, int index) {
         return index < args.length ? args[index] : "";
+    }
+
+    /**
+     * 预装Dock图标:AWT初始化前把图标资源拷贝到临时文件并设置macOS内部属性,
+     * 消除启动期Java默认咖啡杯闪现。每次启动全新拷贝(createTempFile路径唯一,防临时文件被删),
+     * JVM退出自动清理;属性失效时静默退化为运行时Taskbar设置。
+     * 注意:此处不引用UiConstants常量,避免其Color字段类加载提前触碰AWT类
+     */
+    private static void preinstallDockIcon() {
+        try {
+            var in = Starter.class.getClassLoader().getResourceAsStream("dock_logo.png");
+            if (in == null) {
+                return;
+            }
+            var temp = File.createTempFile("encrypt-dog-dock-", ".png");
+            temp.deleteOnExit();
+            try (in; var out = Files.newOutputStream(temp.toPath())) {
+                in.transferTo(out);
+            }
+            System.setProperty("apple.awt.application.icon", temp.getAbsolutePath());
+        } catch (Throwable e) {
+            // 解压失败/属性不支持等,静默降级为运行时Taskbar设置
+        }
     }
 }

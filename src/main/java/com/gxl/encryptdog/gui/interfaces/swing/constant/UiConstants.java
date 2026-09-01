@@ -43,6 +43,10 @@ public final class UiConstants {
      */
     public static final String LOGO_RESOURCE            = "logo.png";
     /**
+     * Dock图标资源路径
+     */
+    public static final String DOCK_LOGO_RESOURCE       = "dock_logo.png";
+    /**
      * 表单头部logo显示尺寸
      */
     public static final int    LOGO_FORM_SIZE           = 40;

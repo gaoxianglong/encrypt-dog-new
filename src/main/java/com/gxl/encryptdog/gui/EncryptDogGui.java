@@ -21,13 +21,16 @@ package com.gxl.encryptdog.gui;
 import com.formdev.flatlaf.FlatDarkLaf;
 import com.gxl.encryptdog.gui.application.dto.EncryptFormDTO;
 import com.gxl.encryptdog.gui.interfaces.swing.EncryptDogFrame;
+import com.gxl.encryptdog.gui.interfaces.swing.LogoUtil;
 import com.gxl.encryptdog.gui.interfaces.swing.constant.UiConstants;
 import com.gxl.encryptdog.gui.interfaces.swing.tray.TrayIpc;
 
 import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
 import java.awt.Frame;
+import java.awt.Taskbar;
 import java.awt.event.WindowEvent;
+import java.awt.image.BaseMultiResolutionImage;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.net.ServerSocket;
@@ -42,9 +45,15 @@ import java.nio.charset.StandardCharsets;
  * @since 2026/8/25 18:00
  */
 public class EncryptDogGui {
+    /**
      * 主窗口引用(单例锁命令接收线程使用)
+     */
+    private static volatile EncryptDogFrame frame;
+    /**
      * GUI端口ServerSocket(同时充当单例锁)
+     */
     private static ServerSocket           guiServer;
+
     private EncryptDogGui() {
     }
 
@@ -58,6 +67,9 @@ public class EncryptDogGui {
             if (TrayIpc.handshake(TrayIpc.GUI_PORT)) {
                 TrayIpc.sendCommand(TrayIpc.GUI_PORT, "show");
                 System.exit(0);
+            }
+        }
+        // 确保托盘守护运行(失败降级:仅无托盘,GUI正常使用)
         TrayIpc.ensureDaemon();
         // 安装FlatLaf暗色主题
         FlatDarkLaf.setup();
@@ -76,30 +88,83 @@ public class EncryptDogGui {
                     frame.prefill(prefill);
                 }
                 frame.setVisible(true);
+                // Dock图标:必须在EDT且窗口可见后设置(macOS AWT在窗口首次显示时才关联Dock,过早设置会被激活过程重置)
+                installDockIcon();
             }
         });
     }
 
+    /**
+     * 设置Dock图标:128px+256px@2x双档多分辨率(macOS Dock ~128pt渲染),失败静默降级
+     */
+    private static void installDockIcon() {
+        try {
+            if (!Taskbar.isTaskbarSupported()) {
+                return;
+            }
+            var icon128 = LogoUtil.loadImage(UiConstants.DOCK_LOGO_RESOURCE, 128);
+            var icon256 = LogoUtil.loadImage(UiConstants.DOCK_LOGO_RESOURCE, 256);
+            if (icon128 == null || icon256 == null) {
+                return;
+            }
+            Taskbar.getTaskbar().setIconImage(new BaseMultiResolutionImage(icon128.getImage(), icon256.getImage()));
+        } catch (Throwable e) {
+            // 无桌面环境/Taskbar不可用等环境性问题,静默降级
+        }
+    }
+
+    /**
      * 绑定GUI端口作为单例锁,并启动命令接收线程
+     * @return true=绑定成功(本实例为唯一GUI)
+     */
     private static boolean acquireSingleton() {
         guiServer = TrayIpc.bindLocal(TrayIpc.GUI_PORT);
         if (guiServer == null) {
+            return false;
+        }
         var thread = new Thread(EncryptDogGui::serveCommands, "encrypt-dog-gui-ipc");
         thread.setDaemon(true);
+        thread.start();
+        return true;
+    }
+
+    /**
      * GUI端口命令接收循环:show=带前台,quit=走标准关闭路径(EXIT_ON_CLOSE)
+     */
     private static void serveCommands() {
         while (!guiServer.isClosed()) {
             try (Socket socket = guiServer.accept()) {
                 socket.setSoTimeout(2000);
                 var out = new PrintWriter(socket.getOutputStream(), true, StandardCharsets.UTF_8);
                 var in = TrayIpc.handshakeServer(socket, out);
+                if (in == null) {
+                    continue;
+                }
+                var command = in.readLine();
+                if ("show".equals(command)) {
+                    SwingUtilities.invokeLater(() -> {
                         var f = frame;
+                        if (f != null) {
                             f.setState(Frame.NORMAL);
                             f.setVisible(true);
                             f.toFront();
                             f.requestFocus();
+                        }
+                    });
+                } else if ("quit".equals(command)) {
+                    SwingUtilities.invokeLater(() -> {
                         var f = frame;
+                        if (f != null) {
                             f.dispatchEvent(new WindowEvent(f, WindowEvent.WINDOW_CLOSING));
+                        }
+                    });
+                }
+            } catch (IOException e) {
+                // 连接异常/超时直接忽略,继续接受
+            }
+        }
+    }
+
     public static void main(String[] args) {
         launch(null);
     }
