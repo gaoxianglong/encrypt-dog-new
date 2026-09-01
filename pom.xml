@@ -4,7 +4,7 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <groupId>org.example</groupId>
-    <artifactId>encrypt-dog-new</artifactId>
+    <artifactId>encryptdog</artifactId>
     <version>2.0.4</version>
     <description>
         2.0.4-RELEASE 新增GUI
@@ -52,7 +52,7 @@
                 <version>3.5.2</version>
                 <configuration>
                     <!-- 指定构件名称 -->
-                    <finalName>dog-${project.version}</finalName>
+                    <finalName>encryptdog-${project.version}</finalName>
                 </configuration>
                 <executions>
                     <execution>

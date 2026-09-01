@@ -46,7 +46,7 @@ import java.util.Objects;
  * @since 2023/9/21 23:24
  */
 @Data
-@CommandLine.Command(name = "encrypt-dog", footer = "Copyright(c) 2021 - 2031 gaoxianglong. All Rights Reserved.", mixinStandardHelpOptions = true)
+@CommandLine.Command(name = "encryptdog", footer = "Copyright(c) 2021 - 2031 gaoxianglong. All Rights Reserved.", mixinStandardHelpOptions = true)
 public class EncryptDogConsole extends ConsoleRequest implements Runnable {
     @Serial
     private static final long   serialVersionUID = 5099613718438642688L;

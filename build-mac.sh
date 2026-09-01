@@ -75,12 +75,12 @@ echo "[build-mac] icns 已生成: /tmp/${APP_NAME}.icns"
 echo "[build-mac] 3/4 jpackage app-image..."
 rm -rf "$DIST"
 STAGE_DIR="$(mktemp -d)"
-cp "target/dog-${VERSION}.jar" "$STAGE_DIR/"
+cp "target/encryptdog-${VERSION}.jar" "$STAGE_DIR/"
 jpackage --type app-image \
     --name "$APP_NAME" \
     --app-version "$VERSION" \
     --main-class com.gxl.encryptdog.Starter \
-    --main-jar "dog-${VERSION}.jar" \
+    --main-jar "encryptdog-${VERSION}.jar" \
     --arguments "--gui" \
     --java-options "-Xms1g -Xmx1g -Xmn384m" \
     --icon "/tmp/${APP_NAME}.icns" \

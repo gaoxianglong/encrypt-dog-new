@@ -12,7 +12,7 @@
 
 #### Scenario: GUI 模式启动
 
-- **WHEN** 用户以 `java -jar dog.jar --gui` 方式启动
+- **WHEN** 用户以 `java -jar encryptdog.jar --gui` 方式启动
 - **THEN** 系统打开 Swing 图形窗口，不在终端执行 picocli 命令行解析
 
 #### Scenario: 托盘守护模式启动
@@ -22,7 +22,7 @@
 
 #### Scenario: 终端模式启动
 
-- **WHEN** 用户以不带 `--gui` 的方式启动（如 `java -jar dog.jar -e -s xxx -k yyy`）
+- **WHEN** 用户以不带 `--gui` 的方式启动（如 `java -jar encryptdog.jar -e -s xxx -k yyy`）
 - **THEN** 系统行为与 GUI 功能引入之前完全一致，包括参数解析、Banner、确认交互与 Dashboard 渲染
 
 ### Requirement: GUI 参数收集
@@ -211,7 +211,7 @@ GUI 功能的引入 MUST NOT 改变终端模式的可观察行为：命令行参
 #### Scenario: 标题栏 logo 与品牌名称协调
 
 - **WHEN** 用户查看窗口标题栏
-- **THEN** logo 与 "EncryptionDog" 垂直居中对齐，且 logo 视觉高度与品牌名称相当
+- **THEN** logo 与 "EncryptDog" 垂直居中对齐，且 logo 视觉高度与品牌名称相当
 
 ### Requirement: 标题栏背景色统一
 
@@ -258,12 +258,12 @@ GUI 模式运行期间，系统 SHALL 通过标准 Taskbar API 将 macOS Dock �
 
 ### Requirement: 信息层级
 
-GUI SHALL 采用"应用品牌—任务操作"两级信息层级：应用品牌（logo + EncryptionDog）仅出现在窗口标题栏；主内容区 SHALL 为干净统一的半透明毛玻璃蒙层，SHALL NOT 绘制顶部高光带（不出现把蒙层分成上下两部分的横向分割线），蒙层上 SHALL NOT 展示任务主标题与副标题，首行即 Encrypt/Decrypt 模式切换，不重复展示品牌名称；版本号 SHALL 位于内容卡片右下角，以次要视觉样式展示。
+GUI SHALL 采用"应用品牌—任务操作"两级信息层级：应用品牌（logo + EncryptDog）仅出现在窗口标题栏；主内容区 SHALL 为干净统一的半透明毛玻璃蒙层，SHALL NOT 绘制顶部高光带（不出现把蒙层分成上下两部分的横向分割线），蒙层上 SHALL NOT 展示任务主标题与副标题，首行即 Encrypt/Decrypt 模式切换，不重复展示品牌名称；版本号 SHALL 位于内容卡片右下角，以次要视觉样式展示。
 
 #### Scenario: 品牌单一性
 
 - **WHEN** 用户查看 GUI 窗口
-- **THEN** logo 与 "EncryptionDog" 仅在窗口标题栏出现一次，内容卡片不重复展示品牌名称
+- **THEN** logo 与 "EncryptDog" 仅在窗口标题栏出现一次，内容卡片不重复展示品牌名称
 
 #### Scenario: 任务标题与模式切换
 

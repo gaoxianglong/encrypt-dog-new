@@ -1,27 +1,27 @@
-<div align=center><img src="https://github.com/gaoxianglong/encryption-dog/blob/master/resources/logo.png"/></div>
+<div align=center><img src="https://github.com/gaoxianglong/encryption-dog/blob/master/resources/logo-encryptdog.png"/></div>
 
 [![License](https://img.shields.io/badge/license-Apache%202-4EB1BA.svg)](https://www.apache.org/licenses/LICENSE-2.0.html) ![License](https://img.shields.io/badge/build-passing-brightgreen.svg) ![License](https://img.shields.io/badge/version-2.0.4--RELEASE-blue)
 > Encryption program with high performance, high security and rich functionsm.<br/>
 > Supports binding the same physical device for file encryption and decryption.<br/>
 
-## Use of EncryptionDog
+## Use of EncryptDog
 ### install
 ```shell
 git clone git@github.com:gaoxianglong/encrypt-dog-new.git
 mvn package
-alias dog = 'java -Xms1g -Xmx1g -Xmn384m -jar dog-2.0.4.jar'
+alias dog = 'java -Xms1g -Xmx1g -Xmn384m -jar encryptdog-2.0.4.jar'
 ```
 or
 ```shell
-$ wget https://github.com/gaoxianglong/encrypt-dog-new/releases/download/v2.0.4/dog-2.0.4.jar
-alias dog = 'java -Xms1g -Xmx1g -Xmn384m -jar dog-2.0.4.jar'
+$ wget https://github.com/gaoxianglong/encrypt-dog-new/releases/download/v2.0.4/encryptdog-2.0.4.jar
+alias dog = 'java -Xms1g -Xmx1g -Xmn384m -jar encryptdog-2.0.4.jar'
 ```
 ### gui mode
-EncryptionDog's primary interface is a Swing graphical UI with a starry-sky particle theme. Add `--gui` to the startup command to launch it (the remaining arguments prefill the form):
+EncryptDog's primary interface is a Swing graphical UI with a starry-sky particle theme. Add `--gui` to the startup command to launch it (the remaining arguments prefill the form):
 ```shell
-$ java -Xms1g -Xmx1g -Xmn384m -jar dog-2.0.4.jar --gui
+$ java -Xms1g -Xmx1g -Xmn384m -jar encryptdog-2.0.4.jar --gui
 # prefill source files and algorithm
-$ java -jar dog-2.0.4.jar --gui -e -a AES -s /path/to/file1,/path/to/file2
+$ java -jar encryptdog-2.0.4.jar --gui -e -a AES -s /path/to/file1,/path/to/file2
 ```
 Interface guide (all UI text is English, the app logo and brand name appear in the title bar, only macOS is supported):
 - **Mode**: Encrypt / Decrypt segmented switch in the first row of the card. In Decrypt mode both the confirm-key row and the `Local machine only` option are hidden (decryption never uses them).
@@ -38,14 +38,14 @@ A terminal mode is also available (run `dog` without `--gui`; its behavior is un
 ```shell
 $ dog -h
 Welcome to
-   ____                       __  _           ___
-  / __/__  __________ _____  / /_(_)__  ___  / _ \___  ___ _
- / _// _ \/ __/ __/ // / _ \/ __/ / _ \/ _ \/ // / _ \/ _ `/
-/___/_//_/\__/_/  \_, / .__/\__/_/\___/_//_/____/\___/\_, /
-                 /___/_/                             /___/
+   ____                       __  ___
+  / __/__  __________ _____  / /_/ _ \___  ___ _
+ / _// _ \/ __/ __/ // / _ \/ __/ // / _ \/ _ `/
+/___/_//_/\__/_/  \_, / .__/\__/____/\___/\_, / 
+                 /___/_/                 /___/
 	version: 2.0.4
 
-Usage: encrypt-dog [-dehoV] -k [-k]... [-a=<encryptAlgorithm>] [-t=<storage
+Usage: encryptdog [-dehoV] -k [-k]... [-a=<encryptAlgorithm>] [-t=<storage
                    path>] -s=<source file>[,<source file>...]... [-s=<source
                    file>[,<source file>...]...]...
   -a, --encrypt-algorithm=<encryptAlgorithm>

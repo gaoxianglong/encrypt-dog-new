@@ -33,7 +33,7 @@ public final class UiConstants {
     /**
      * 应用名称
      */
-    public static final String APP_NAME                 = "EncryptionDog";
+    public static final String APP_NAME                 = "EncryptDog";
     /**
      * 应用版本(构建时由Maven过滤dog.properties注入project.version,与pom版本一致)
      */

@@ -312,7 +312,7 @@ public class EncryptDogFrame extends JFrame {
                     });
                 }
             }
-        }, "encrypt-dog-gui-worker");
+        }, "encryptdog-gui-worker");
         worker.setDaemon(true);
         worker.start();
     }
