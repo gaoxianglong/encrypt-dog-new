@@ -410,7 +410,7 @@ GUI 窗口底部 SHALL 展示版权信息 "Copyright (c) 2021-2031 gaoxianglong"
 
 ### Requirement: 执行表格视图
 
-窗口顶部标题栏 SHALL 在所有页面保持展示（品牌文字、logo 与窗口按钮常显，不做任何改动）；返回图标按钮 SHALL 使用左向返回箭头图标、紧贴窗口标题栏底部左侧（约 2px 间隙，小尺寸、与蒙层分离，替代文字 Back 按钮）；内窗 SHALL 为完整圆角半透明毛玻璃蒙层，蒙层 SHALL 为干净统一的半透明面，SHALL NOT 绘制顶部高光带（不出现横向分割线）；蒙层顶部 SHALL 位于返回图标下方、与图标底保留约 12px 间隙（顶部约 y=34），蒙层与其上内容（状态文字、统计小窗、表头、文件列表）SHALL 整体上移，减少顶部留白，蒙层底部 SHALL 保持距内容区底部约 44px（位于版权信息上方）；执行页顶部 SHALL 保留隐形拖拽区，窗口仍可拖动；五个统计小窗横向等宽铺满（Operation、Files、Success、Failed、Elapsed，高度紧凑），统计小窗内文字 SHALL 全部水平居中，随执行进展实时更新，操作类型小窗 SHALL 在进入执行页时立即明确展示当前动作类型（加密为 Encrypt、解密为 Decrypt）；9 列文件列表：No、Source File、Before Size、After Size（完成前为 -）、State（展示为首字母大写其余小写：Waiting/Running/Finished，内部值与核心加/解密执行状态枚举 WAITING/RUNNING/FINISHED 一致）、Progress、Estimated Time、Target File、Result，列表 SHALL 具备与主题同源的自绘观感（半透明圆角行条、无网格、数值列居中），列表表头文字 SHALL 全部居中对齐且以主题主文本色渲染，表头背景 SHALL 为主色系半透明深紫（与四色渐变紫段协调），进度列 SHALL 进一步加宽，进度条 SHALL 为四色马赛克脉冲渐变条（乳白→灰→淡紫→紫渐变方格、每格确定性相位明灭脉冲、圆角深色轨道固定 253px 宽 × 12px 高且自左端起、填充 SHALL 以缓动动画追赶目标进度（先快后慢、约 0.5 秒趋稳）而非瞬间跳变、未产生进度时无填充），进度条右侧 SHALL 展示百分比文本（未产生进度时显示 0% 而非 -），失败行百分比 SHALL 显示失败时刻进度（失败前从未产生进度时保持 0%），Source File 与 Target File 列宽相应收敛让出空间；Source File 与 Target File 列 SHALL 以终端风格截断长路径：超出列宽时丢弃前段、以前缀 `...` 表示，末尾字符完整显示（与终端 Dashboard 的截断语义一致），悬停 SHALL 展示完整路径；Result 列 SHALL 以状态图标替代文字（成功为对勾小图标、失败为错误小图标，失败图标悬停展示失败原因，图标尺寸适中不过大）；失败行进度条 SHALL 停留在失败时刻的进度，不强制加载到 100%；文件行 SHALL 按状态排序展示，优先级为 RUNNING > WAITING > FINISHED，序号 SHALL 随排序重排；文件较多时列表 SHALL 支持滚动查看全部行（含超过 10 行），滚动条 SHALL 使用主题强调紫色；算法信息与失败错误 SHALL 以蒙层内顶部小字展示；进入执行页时 SHALL 立即展示统计小窗与全部文件行占位（状态为 Waiting），SHALL NOT 出现空白等待态；每次操作开始时 SHALL 清空上一轮行数据，SHALL NOT 出现行残留或重复。
+窗口顶部标题栏 SHALL 在所有页面保持展示（品牌文字、logo 与窗口按钮常显，不做任何改动）；返回图标按钮 SHALL 使用左向返回箭头图标、紧贴窗口标题栏底部左侧（约 2px 间隙，小尺寸、与蒙层分离，替代文字 Back 按钮）；内窗 SHALL 为完整圆角半透明毛玻璃蒙层，蒙层 SHALL 为干净统一的半透明面，SHALL NOT 绘制顶部高光带（不出现横向分割线）；蒙层顶部 SHALL 位于返回图标下方、与图标底保留约 12px 间隙（顶部约 y=34），蒙层与其上内容（状态文字、统计小窗、表头、文件列表）SHALL 整体上移，减少顶部留白，蒙层底部 SHALL 保持距内容区底部约 44px（位于版权信息上方）；执行页顶部 SHALL 保留隐形拖拽区，窗口仍可拖动；五个统计小窗横向等宽铺满（Operation、Files、Success、Failed、Elapsed，高度紧凑），统计小窗内文字 SHALL 全部水平居中，随执行进展实时更新，操作类型小窗 SHALL 在进入执行页时立即明确展示当前动作类型（加密为 Encrypt、解密为 Decrypt）；9 列文件列表：No、Source File、Before Size、After Size（完成前为 -）、State（状态以半透明圆角胶囊徽章展示：圆角矩形低透明度状态色底色 + 同色描边 + 状态色文字，文字保持首字母大写其余小写 Waiting/Running/Finished，内部值与核心加/解密执行状态枚举 WAITING/RUNNING/FINISHED 一致，徽章颜色随状态切换：Waiting 灰色、Running 紫色、Finished 薰衣草白（主题同源阶梯配色，绿色仅保留给 Result 列对勾图标），三态徽章均静态渲染，SHALL NOT 出现 FAILED 徽章——失败行的状态仍为 Finished，失败仅由 Result 列错误图标传达，状态列相应加宽以容纳徽章）、Progress、Estimated Time、Target File、Result，列表 SHALL 具备与主题同源的自绘观感（半透明圆角行条、无网格、数值列居中），列表表头文字 SHALL 全部居中对齐且以主题主文本色渲染，表头背景 SHALL 为主色系半透明深紫（与四色渐变紫段协调），进度列 SHALL 进一步加宽，进度条 SHALL 为四色马赛克脉冲渐变条（乳白→灰→淡紫→紫渐变方格、每格确定性相位明灭脉冲、圆角深色轨道固定 253px 宽 × 12px 高且自左端起、填充 SHALL 以缓动动画追赶目标进度（先快后慢、约 0.5 秒趋稳）而非瞬间跳变、未产生进度时无填充），进度条右侧 SHALL 展示百分比文本（未产生进度时显示 0% 而非 -），失败行百分比 SHALL 显示失败时刻进度（失败前从未产生进度时保持 0%），Source File 与 Target File 列宽相应收敛让出空间；Source File 与 Target File 列 SHALL 以终端风格截断长路径：超出列宽时丢弃前段、以前缀 `...` 表示，末尾字符完整显示（与终端 Dashboard 的截断语义一致），悬停 SHALL 展示完整路径；Result 列 SHALL 以状态图标替代文字（成功为对勾小图标、失败为错误小图标，失败图标悬停展示失败原因，图标尺寸适中不过大）；失败行进度条 SHALL 停留在失败时刻的进度，不强制加载到 100%；文件行 SHALL 按状态排序展示，优先级为 RUNNING > WAITING > FINISHED，序号 SHALL 随排序重排；文件较多时列表 SHALL 支持滚动查看全部行（含超过 10 行），滚动条 SHALL 使用主题强调紫色；算法信息与失败错误 SHALL 以蒙层内顶部小字展示；进入执行页时 SHALL 立即展示统计小窗与全部文件行占位（状态为 Waiting），SHALL NOT 出现空白等待态；每次操作开始时 SHALL 清空上一轮行数据，SHALL NOT 出现行残留或重复。
 
 #### Scenario: 进入即展示三层布局
 
@@ -425,12 +425,22 @@ GUI 窗口底部 SHALL 展示版权信息 "Copyright (c) 2021-2031 gaoxianglong"
 #### Scenario: 表格实时刷新
 
 - **WHEN** 加/解密执行中
-- **THEN** 每个文件行的进度、状态、预计时间持续更新；状态内部值取核心执行状态枚举定义的状态（WAITING/RUNNING/FINISHED），展示为首字母大写其余小写（Waiting/Running/Finished）；目标文件路径在解析完成后即显示；处理前大小显示为源文件大小；成功/失败统计小窗随执行实时累加，总耗时持续走时
+- **THEN** 每个文件行的进度、状态、预计时间持续更新；状态内部值取核心执行状态枚举定义的状态（WAITING/RUNNING/FINISHED），以胶囊徽章展示、文字为首字母大写其余小写（Waiting/Running/Finished），徽章颜色随状态切换（Waiting 灰、Running 紫、Finished 薰衣草白）；目标文件路径在解析完成后即显示；处理前大小显示为源文件大小；成功/失败统计小窗随执行实时累加，总耗时持续走时
 
 #### Scenario: 完成回填
 
 - **WHEN** 某个文件处理完成
-- **THEN** 该行状态变为 Finished、处理后大小回填为目标文件大小、结果列显示成功对勾或失败错误小图标（失败图标悬停展示错误原因）；失败行进度条停留在失败时刻进度不强制到 100%，成功行进度为 100%
+- **THEN** 该行状态徽章变为 Finished（薰衣草白）、处理后大小回填为目标文件大小、结果列显示成功对勾或失败错误小图标（失败图标悬停展示错误原因）；失败行状态徽章仍为 Finished 薰衣草白、进度条停留在失败时刻进度不强制到 100%，成功行进度为 100%
+
+#### Scenario: 状态徽章渲染
+
+- **WHEN** 执行表格页展示文件行
+- **THEN** 状态列以圆角半透明胶囊徽章展示状态：Waiting 灰色、Running 紫色、Finished 薰衣草白，徽章为圆角矩形低透明度状态色底色 + 同色描边 + 状态色文字，文字保持首字母大写其余小写（Waiting/Running/Finished）；不出现 FAILED 徽章或其它状态文字，失败行的状态仍显示 Finished
+
+#### Scenario: 状态徽章静态渲染
+
+- **WHEN** 执行表格页展示文件行（任意状态）
+- **THEN** 三态徽章均以静态样式渲染（底色透明度恒定），不出现呼吸/闪烁等动画效果
 
 #### Scenario: 进度条与百分比
 

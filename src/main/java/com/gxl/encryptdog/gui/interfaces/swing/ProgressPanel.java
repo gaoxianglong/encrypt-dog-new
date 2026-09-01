@@ -31,6 +31,7 @@ import javax.swing.JScrollPane;
 import javax.swing.SwingConstants;
 import javax.swing.Timer;
 import javax.swing.UIManager;
+import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Font;
 import java.awt.FontMetrics;
@@ -91,9 +92,9 @@ public class ProgressPanel extends JPanel {
     private static final String[] COLUMNS          = { "No", "Source File", "Before Size", "After Size", "State",
             "Progress", "Estimated Time", "Target File", "Result" };
     /**
-     * 列表列宽比(总和1151,按面板可用宽度等比缩放;进度列加宽承载马赛克进度条与百分比文本,Source/Target收敛让出空间)
+     * 列表列宽比(总和1151,按面板可用宽度等比缩放;进度列加宽承载马赛克进度条与百分比文本,状态列加宽容纳胶囊徽章,Source/Target收敛让出空间)
      */
-    private static final int[]    COLUMN_RATIOS    = { 36, 195, 80, 80, 75, 300, 80, 195, 110 };
+    private static final int[]    COLUMN_RATIOS    = { 36, 195, 80, 80, 92, 283, 80, 195, 110 };
     /**
      * 列表列宽比总和
      */
@@ -502,13 +503,10 @@ public class ProgressPanel extends JPanel {
         JLabel beforeLabel = cellLabel(data.before, UiConstants.TEXT_SECONDARY, SwingConstants.CENTER, layout, 2);
         JLabel afterLabel = cellLabel(data.after, UiConstants.TEXT_SECONDARY, SwingConstants.CENTER, layout, 3);
 
-        Color stateColor = UiConstants.TEXT_PRIMARY;
-        if (STATUS_RUNNING.equals(data.state)) {
-            stateColor = UiConstants.ACCENT_BRIGHT;
-        } else if (STATUS_WAITING.equals(data.state)) {
-            stateColor = UiConstants.TEXT_SECONDARY;
-        }
-        JLabel stateLabel = cellLabel(displayState(data.state), stateColor, SwingConstants.CENTER, layout, 4);
+        // 状态胶囊徽章:实例随行复用,状态随快照更新,绘制时在单元格内自适应居中
+        StateChip chip = data.chip;
+        chip.setState(data.state);
+        chip.setBounds(layout[8] + 6, 0, layout[9] - 12, ROW_H);
 
         // 复用行内进度条实例(动画状态随行保留),固定253×12(照搬示例数值),百分比标签紧贴条右端
         MosaicBar bar = data.bar;
@@ -542,7 +540,7 @@ public class ProgressPanel extends JPanel {
         row.add(sourceLabel);
         row.add(beforeLabel);
         row.add(afterLabel);
-        row.add(stateLabel);
+        row.add(chip);
         row.add(etaLabel);
         row.add(targetLabel);
         row.add(resultLabel);
@@ -689,6 +687,10 @@ public class ProgressPanel extends JPanel {
          * 行内进度条实例(跨快照复用,保留缓动动画状态)
          */
         private final MosaicBar bar;
+        /**
+         * 状态胶囊徽章实例(跨快照复用,呼吸动画状态由共享相位推导)
+         */
+        private final StateChip chip;
 
         RowData(int no, String source, String before, String after, String state, String progress, String eta,
                 String target, String result) {
@@ -702,6 +704,7 @@ public class ProgressPanel extends JPanel {
             this.target = target;
             this.result = result;
             this.bar = new MosaicBar(parsePercent(progress));
+            this.chip = new StateChip(state);
         }
     }
 
@@ -751,6 +754,100 @@ public class ProgressPanel extends JPanel {
             g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
             g2d.setColor(new Color(255, 255, 255, 10));
             g2d.fillRoundRect(0, 0, getWidth(), getHeight(), ARC, ARC);
+            g2d.dispose();
+        }
+    }
+
+    /**
+     * 状态胶囊徽章:圆角矩形低透明度状态色底色+同色描边+状态色文字,
+     * 配色为主题同源阶梯(Waiting灰→Running紫→Finished薰衣草白),三态均静态渲染
+     */
+    private final class StateChip extends JComponent {
+        /**
+         * 徽章高度(行高内垂直居中)
+         */
+        private static final int CHIP_H        = 22;
+        /**
+         * 文字水平内边距
+         */
+        private static final int TEXT_PAD      = 10;
+        /**
+         * 当前状态(WAITING/RUNNING/FINISHED)
+         */
+        private String           state;
+
+        StateChip(String state) {
+            this.state = state;
+            setOpaque(false);
+        }
+
+        /**
+         * 更新状态
+         * @param state 内部状态值
+         */
+        void setState(String state) {
+            this.state = state;
+        }
+
+        /**
+         * 状态主题色:Waiting灰/Running紫/Finished薰衣草白(主题同源阶梯:沉睡→活跃→归于平静)
+         * @return 对应主题色
+         */
+        private Color stateColor() {
+            if (STATUS_RUNNING.equals(state)) {
+                return UiConstants.ACCENT_BRIGHT;
+            }
+            if (STATUS_WAITING.equals(state)) {
+                return UiConstants.TEXT_SECONDARY;
+            }
+            return UiConstants.TEXT_PRIMARY;
+        }
+
+        /**
+         * 底色alpha:三态静态(Waiting 15%/Running 20%/Finished 20%)
+         * @return 0-255
+         */
+        private int fillAlpha() {
+            return STATUS_WAITING.equals(state) ? 38 : 51;
+        }
+
+        /**
+         * 描边alpha:Waiting 40%,Running/Finished 50%
+         * @return 0-255
+         */
+        private int borderAlpha() {
+            return STATUS_WAITING.equals(state) ? 102 : 128;
+        }
+
+        @Override
+        protected void paintComponent(Graphics g) {
+            super.paintComponent(g);
+            if (state == null || state.isBlank()) {
+                return;
+            }
+            Graphics2D g2d = (Graphics2D) g.create();
+            g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            String text = displayState(state);
+            Font font = UIManager.getFont(DEFAULT_FONT_KEY).deriveFont(Font.BOLD, 11F);
+            g2d.setFont(font);
+            FontMetrics metrics = g2d.getFontMetrics();
+            // 宽=实测文字宽+内边距(收缩至列宽内),高固定,圆角=高/2全胶囊,单元格内水平垂直居中
+            int w = Math.max(1, Math.min(metrics.stringWidth(text) + TEXT_PAD * 2, getWidth()));
+            int h = CHIP_H;
+            int x = (getWidth() - w) / 2;
+            int y = (getHeight() - h) / 2;
+            Color base = stateColor();
+            // 低透明度状态色底色
+            g2d.setColor(new Color(base.getRed(), base.getGreen(), base.getBlue(), fillAlpha()));
+            g2d.fillRoundRect(x, y, w, h, h, h);
+            // 1px同色描边
+            g2d.setColor(new Color(base.getRed(), base.getGreen(), base.getBlue(), borderAlpha()));
+            g2d.setStroke(new BasicStroke(1F));
+            g2d.drawRoundRect(x, y, w, h, h, h);
+            // 状态色文字(全饱和度)
+            g2d.setColor(base);
+            int ty = y + (h - metrics.getHeight()) / 2 + metrics.getAscent();
+            g2d.drawString(text, x + (w - metrics.stringWidth(text)) / 2, ty);
             g2d.dispose();
         }
     }
