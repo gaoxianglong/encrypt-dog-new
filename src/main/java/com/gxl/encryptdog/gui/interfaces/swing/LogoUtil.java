@@ -99,6 +99,44 @@ public final class LogoUtil {
     }
 
     /**
+     * 圆角渲染加载资源图片:等比缩放至目标尺寸并以圆角矩形裁剪(四角透明),
+     * 内容收进82%内框(与macOS标准图标自带约18%透明边距一致,避免Dock观感偏大),
+     * 半径=内框边长22%(与macOS标准squircle观感一致,与打包脚本PIL预处理同比例)。
+     * headless安全(BufferedImage/Graphics2D不初始化AWT Toolkit),可在AWT初始化前调用
+     * @param resource 资源路径(如dock_logo.png)
+     * @param size 输出尺寸(像素)
+     * @return 圆角渲染后的图像,资源缺失返回null
+     */
+    public static BufferedImage loadRoundedImage(String resource, int size) {
+        try (InputStream in = LogoUtil.class.getClassLoader().getResourceAsStream(resource)) {
+            if (Objects.isNull(in)) {
+                return null;
+            }
+            var image = ImageIO.read(in);
+            var bounds = alphaBounds(image);
+            var content = Objects.isNull(bounds)
+                    ? image : image.getSubimage(bounds.x, bounds.y, bounds.width, bounds.height);
+            var inner = (int) Math.round(size * 0.82);
+            var inset = (size - inner) / 2;
+            var scale = Math.min((double) inner / content.getWidth(), (double) inner / content.getHeight());
+            var width = (int) Math.round(content.getWidth() * scale);
+            var height = (int) Math.round(content.getHeight() * scale);
+            var out = new BufferedImage(size, size, BufferedImage.TYPE_INT_ARGB);
+            var g2d = out.createGraphics();
+            g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            g2d.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BICUBIC);
+            // 圆角裁剪(半径=内框边长22%),居中绘制缩放后的内容
+            var arc = (int) Math.round(inner * 0.22);
+            g2d.clip(new java.awt.geom.RoundRectangle2D.Double(inset, inset, inner, inner, arc, arc));
+            g2d.drawImage(content, inset + (inner - width) / 2, inset + (inner - height) / 2, width, height, null);
+            g2d.dispose();
+            return out;
+        } catch (IOException e) {
+            return null;
+        }
+    }
+
+    /**
      * 计算图片非透明内容的包围盒(alpha>0),全透明时返回null
      * @param image
      * @return

@@ -21,10 +21,10 @@ package com.gxl.encryptdog;
 import com.gxl.encryptdog.core.shell.EncryptDogConsole;
 import com.gxl.encryptdog.gui.EncryptDogGui;
 import com.gxl.encryptdog.gui.application.dto.EncryptFormDTO;
+import com.gxl.encryptdog.gui.interfaces.swing.LogoUtil;
 import picocli.CommandLine;
 
 import java.io.File;
-import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Objects;
@@ -120,25 +120,25 @@ public class Starter {
     }
 
     /**
-     * 预装Dock图标:AWT初始化前把图标资源拷贝到临时文件并设置macOS内部属性,
-     * 消除启动期Java默认咖啡杯闪现。每次启动全新拷贝(createTempFile路径唯一,防临时文件被删),
-     * JVM退出自动清理;属性失效时静默退化为运行时Taskbar设置。
-     * 注意:此处不引用UiConstants常量,避免其Color字段类加载提前触碰AWT类
+     * 预装Dock图标:AWT初始化前把图标资源圆角渲染(512px,与运行时Taskbar设置同源同比例)
+     * 写入临时文件并设置macOS内部属性,消除启动期Java默认咖啡杯闪现且与运行期圆角观感一致。
+     * 每次启动全新输出(createTempFile路径唯一,防临时文件被删),JVM退出自动清理;
+     * 属性失效时静默退化为运行时Taskbar设置。
+     * 注意:此处不引用UiConstants常量,避免其Color字段类加载提前触碰AWT类;
+     * LogoUtil圆角渲染为headless安全路径(BufferedImage/Graphics2D不初始化AWT Toolkit)
      */
     private static void preinstallDockIcon() {
         try {
-            var in = Starter.class.getClassLoader().getResourceAsStream("dock_logo.png");
-            if (in == null) {
+            var image = LogoUtil.loadRoundedImage("dock_logo.png", 512);
+            if (image == null) {
                 return;
             }
             var temp = File.createTempFile("encrypt-dog-dock-", ".png");
             temp.deleteOnExit();
-            try (in; var out = Files.newOutputStream(temp.toPath())) {
-                in.transferTo(out);
-            }
+            javax.imageio.ImageIO.write(image, "png", temp);
             System.setProperty("apple.awt.application.icon", temp.getAbsolutePath());
         } catch (Throwable e) {
-            // 解压失败/属性不支持等,静默降级为运行时Taskbar设置
+            // 渲染/写盘失败/属性不支持等,静默降级为运行时Taskbar设置
         }
     }
 }

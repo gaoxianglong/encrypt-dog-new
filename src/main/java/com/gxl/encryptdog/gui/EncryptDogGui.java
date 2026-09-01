@@ -76,12 +76,12 @@ public class EncryptDogGui {
             if (!Taskbar.isTaskbarSupported()) {
                 return;
             }
-            var icon128 = LogoUtil.loadImage(UiConstants.DOCK_LOGO_RESOURCE, 128);
-            var icon256 = LogoUtil.loadImage(UiConstants.DOCK_LOGO_RESOURCE, 256);
+            var icon128 = LogoUtil.loadRoundedImage(UiConstants.DOCK_LOGO_RESOURCE, 128);
+            var icon256 = LogoUtil.loadRoundedImage(UiConstants.DOCK_LOGO_RESOURCE, 256);
             if (icon128 == null || icon256 == null) {
                 return;
             }
-            Taskbar.getTaskbar().setIconImage(new BaseMultiResolutionImage(icon128.getImage(), icon256.getImage()));
+            Taskbar.getTaskbar().setIconImage(new BaseMultiResolutionImage(icon128, icon256));
         } catch (Throwable e) {
             // 无桌面环境/Taskbar不可用等环境性问题,静默降级
         }
