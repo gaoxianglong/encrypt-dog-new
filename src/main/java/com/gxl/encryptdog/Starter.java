@@ -21,7 +21,6 @@ package com.gxl.encryptdog;
 import com.gxl.encryptdog.core.shell.EncryptDogConsole;
 import com.gxl.encryptdog.gui.EncryptDogGui;
 import com.gxl.encryptdog.gui.application.dto.EncryptFormDTO;
-import com.gxl.encryptdog.gui.interfaces.swing.tray.TrayDaemon;
 import picocli.CommandLine;
 
 import java.io.File;
@@ -42,17 +41,8 @@ public class Starter {
      * GUI模式参数
      */
     private static final String GUI_OPTION = "--gui";
-    /**
-     * 托盘守护模式参数(内部使用,由GUI启动时自动拉起)
-     */
-    private static final String TRAY_OPTION = "--tray";
 
     public static void main(String[] args) {
-        // 托盘守护模式路由:仅挂载菜单栏图标,不建窗口、不解析picocli
-        if (Arrays.asList(args).contains(TRAY_OPTION)) {
-            TrayDaemon.main(args);
-            return;
-        }
         // GUI模式路由:剥离--gui参数后启动Swing图形界面
         var prefill = parseGuiArgs(args);
         if (Objects.nonNull(prefill)) {
@@ -86,7 +76,7 @@ public class Starter {
         var files = new ArrayList<String>();
         for (var i = 0; i < args.length; i++) {
             var arg = args[i];
-            if (GUI_OPTION.equals(arg) || TRAY_OPTION.equals(arg)) {
+            if (GUI_OPTION.equals(arg)) {
                 continue;
             }
             if ("-s".equals(arg) || "--source-file".equals(arg)) {
