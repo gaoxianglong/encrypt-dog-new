@@ -95,9 +95,9 @@ public class EncryptDogFrame extends JFrame {
      */
     private final EncryptOperationAppService appService = new EncryptOperationAppService();
     /**
-     * 粒子背景层
+     * 静态渐变背景层
      */
-    private final ParticlePanel  particlePanel;
+    private final GradientBackgroundPanel backgroundPanel;
     /**
      * 毛玻璃卡片
      */
@@ -145,9 +145,9 @@ public class EncryptDogFrame extends JFrame {
         layeredPane = new JLayeredPane();
         layeredPane.setPreferredSize(new Dimension(UiConstants.WINDOW_WIDTH, CONTENT_HEIGHT));
 
-        particlePanel = new ParticlePanel();
-        particlePanel.setBounds(0, 0, UiConstants.WINDOW_WIDTH, CONTENT_HEIGHT);
-        layeredPane.add(particlePanel, JLayeredPane.DEFAULT_LAYER);
+        backgroundPanel = new GradientBackgroundPanel();
+        backgroundPanel.setBounds(0, 0, UiConstants.WINDOW_WIDTH, CONTENT_HEIGHT);
+        layeredPane.add(backgroundPanel, JLayeredPane.DEFAULT_LAYER);
 
         // 底部版权信息:粒子层之上、卡片下方居中展示(窗口y730 = 分层面板y684)
         copyrightLabel.setForeground(UiConstants.TEXT_SECONDARY);
@@ -199,8 +199,6 @@ public class EncryptDogFrame extends JFrame {
         progressPanel.setBounds(0, 0, UiConstants.CARD_WIDTH, UiConstants.CARD_HEIGHT);
 
         add(layeredPane, BorderLayout.CENTER);
-
-        forwardCardMouseToParticles(glassCard);
     }
 
     @Override
@@ -213,7 +211,6 @@ public class EncryptDogFrame extends JFrame {
 
     @Override
     public void dispose() {
-        particlePanel.stop();
         super.dispose();
     }
 
@@ -381,7 +378,7 @@ public class EncryptDogFrame extends JFrame {
     private void relayoutContent(int w, int h, boolean settle) {
         // 窗口标题栏在所有页面常显,内容区位于其下方
         int contentH = h - UiConstants.TITLE_BAR_HEIGHT;
-        particlePanel.setBounds(0, 0, w, contentH);
+        backgroundPanel.setBounds(0, 0, w, contentH);
         copyrightLabel.setBounds(0, contentH - 30, w, 20);
         // home图标:紧贴窗口标题栏底部(2px间隙)
         homeButton.setLocation(12, 2);
@@ -396,27 +393,6 @@ public class EncryptDogFrame extends JFrame {
             layeredPane.revalidate();
             layeredPane.repaint();
         }
-    }
-
-    /**
-     * 将卡片上的鼠标位置转发给粒子层（保证全窗口鼠标微扰）。
-     * @param source 鼠标事件来源组件
-     */
-    private void forwardCardMouseToParticles(GlassCardPanel source) {
-        MouseAdapter mouseAdapter = new MouseAdapter() {
-            @Override
-            public void mouseMoved(MouseEvent e) {
-                Point point = SwingUtilities.convertPoint(source, e.getPoint(), particlePanel);
-                particlePanel.setMousePoint(point);
-            }
-
-            @Override
-            public void mouseExited(MouseEvent e) {
-                particlePanel.setMousePoint(null);
-            }
-        };
-        source.addMouseListener(mouseAdapter);
-        source.addMouseMotionListener(mouseAdapter);
     }
 
     /**

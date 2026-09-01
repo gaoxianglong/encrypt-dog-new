@@ -111,61 +111,9 @@ public final class UiConstants {
      */
     public static final int    CARD_PADDING_X           = 36;
     /**
-     * 粒子数量
-     */
-    public static final int    PARTICLE_COUNT           = 300;
-    /**
-     * 星座连线距离阈值（像素）
-     */
-    public static final int    LINK_DISTANCE            = 110;
-    /**
-     * 鼠标影响半径（像素）
-     */
-    public static final int    MOUSE_INFLUENCE_RADIUS   = 90;
-    /**
-     * 鼠标推动强度（像素/帧）
-     */
-    public static final double MOUSE_PUSH_STRENGTH      = 1.6;
-    /**
      * 动画帧间隔（毫秒，约 60fps）
      */
-    public static final int    FRAME_DELAY_MS           = 16;
-    /**
-     * 粒子聚集阶段时长（毫秒）
-     */
-    public static final int    BURST_GATHER_MS          = 550;
-    /**
-     * 粒子爆发飞散阶段时长（毫秒）
-     */
-    public static final int    BURST_FLY_MS             = 900;
-    /**
-     * 粒子基础漂移速度下限
-     */
-    public static final double PARTICLE_MIN_SPEED       = 0.25;
-    /**
-     * 粒子基础漂移速度上限
-     */
-    public static final double PARTICLE_MAX_SPEED       = 0.8;
-    /**
-     * 粒子半径下限
-     */
-    public static final double PARTICLE_MIN_RADIUS      = 0.7;
-    /**
-     * 粒子半径上限
-     */
-    public static final double PARTICLE_MAX_RADIUS      = 2.2;
-    /**
-     * 粒子亮度下限
-     */
-    public static final double PARTICLE_MIN_BRIGHTNESS  = 0.15;
-    /**
-     * 粒子亮度上限
-     */
-    public static final double PARTICLE_MAX_BRIGHTNESS  = 1.0;
-    /**
-     * 星座连线最大透明度
-     */
-    public static final int    LINK_MAX_ALPHA           = 110;
+    public static final int    FRAME_DELAY_MS               = 16;
     /**
      * 输入框高度
      */
@@ -194,18 +142,6 @@ public final class UiConstants {
      * 背景渐变结束色
      */
     public static final Color  BG_BOTTOM                = new Color(0x2B1A52);
-    /**
-     * 粒子亮色
-     */
-    public static final Color  PARTICLE_BRIGHT          = new Color(0xD5C7F3);
-    /**
-     * 粒子暗色
-     */
-    public static final Color  PARTICLE_DIM             = new Color(0x8A76C4);
-    /**
-     * 星座连线颜色
-     */
-    public static final Color  LINK_COLOR               = new Color(0x9D89DC);
     /**
      * 卡片填充色（半透明白）
      */
