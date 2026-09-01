@@ -192,8 +192,8 @@ public class EncryptFormPanel extends JPanel {
         dropPanel.setBounds(LABEL_X, 54, FIELD_X + FIELD_WIDTH - LABEL_X, 150);
         add(dropPanel);
 
-        // 按钮行:选择文件/选择目录左对齐,删除选中右对齐
-        JButton selectFileButton = createSmallButton("+ Select files");
+        // 按钮行:选择文件/选择目录左对齐,删除选中右对齐(添加类为实底胶囊,辅助类为幽灵文字)
+        JButton selectFileButton = createCapsuleButton("+ Select files");
         selectFileButton.setBounds(FIELD_X, 208, 130, 26);
         selectFileButton.addActionListener(new ActionListener() {
             @Override
@@ -203,7 +203,7 @@ public class EncryptFormPanel extends JPanel {
         });
         add(selectFileButton);
 
-        JButton selectDirButton = createSmallButton("+ Select directory");
+        JButton selectDirButton = createCapsuleButton("+ Select directory");
         selectDirButton.setBounds(FIELD_X + 142, 208, 130, 26);
         selectDirButton.addActionListener(new ActionListener() {
             @Override
@@ -403,6 +403,15 @@ public class EncryptFormPanel extends JPanel {
         button.setForeground(UiConstants.ACCENT_BRIGHT);
         button.setFont(UIManager.getFont(DEFAULT_FONT_KEY).deriveFont(Font.PLAIN, UiConstants.SMALL_FONT_SIZE));
         return button;
+    }
+
+    /**
+     * 创建实底胶囊小按钮(添加类操作):扁平主色实底、白色文字、全圆角
+     * @param text 按钮文本
+     * @return 胶囊按钮
+     */
+    private JButton createCapsuleButton(String text) {
+        return new CapsuleButton(text);
     }
 
     /**

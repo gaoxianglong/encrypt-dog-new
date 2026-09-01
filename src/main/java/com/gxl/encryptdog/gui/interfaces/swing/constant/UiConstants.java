@@ -259,9 +259,9 @@ public final class UiConstants {
      */
     public static final Color  TITLE_BAR_HOVER          = new Color(255, 255, 255, 28);
     /**
-     * 标题栏关闭按钮悬停色
+     * 标题栏关闭按钮悬停色(玻璃红:同色相半透明,保留警示语义且与标题栏玻璃质感一致)
      */
-    public static final Color  TITLE_BAR_CLOSE_HOVER    = new Color(0xE05555);
+    public static final Color  TITLE_BAR_CLOSE_HOVER    = new Color(0xE0, 0x55, 0x55, 45);
     /**
      * 主文本色
      */
