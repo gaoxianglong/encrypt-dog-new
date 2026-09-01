@@ -24,7 +24,6 @@ import com.gxl.encryptdog.base.error.ResourceException;
 import com.gxl.encryptdog.core.event.BaseEvent;
 import com.gxl.encryptdog.core.event.FinishedEvent;
 import com.gxl.encryptdog.core.event.listener.BaseListenerImpl;
-import com.gxl.encryptdog.core.operation.proxy.schedule.ViewSchedule;
 
 /**
  * 完成事件监听

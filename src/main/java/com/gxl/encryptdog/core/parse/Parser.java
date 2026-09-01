@@ -20,7 +20,6 @@ package com.gxl.encryptdog.core.parse;
 
 import com.gxl.encryptdog.base.error.CapacityException;
 import com.gxl.encryptdog.base.error.ParseException;
-import com.gxl.encryptdog.base.error.ValidateException;
 import com.gxl.encryptdog.core.shell.request.ConsoleRequest;
 
 import java.util.List;

@@ -22,7 +22,6 @@ import com.gxl.encryptdog.base.common.model.OperationContext;
 import com.gxl.encryptdog.base.common.model.OperationVO;
 import com.gxl.encryptdog.base.enums.EncryptTypeEnum;
 import com.gxl.encryptdog.base.error.BaseException;
-import com.gxl.encryptdog.core.operation.proxy.Proxy;
 import com.gxl.encryptdog.core.operation.proxy.impl.EncryptProxy;
 import com.gxl.encryptdog.core.operation.proxy.params.ResultContext;
 import com.gxl.encryptdog.core.parse.Parser;

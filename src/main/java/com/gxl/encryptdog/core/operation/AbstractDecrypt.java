@@ -20,11 +20,9 @@ package com.gxl.encryptdog.core.operation;
 
 import com.google.common.base.Charsets;
 import com.gxl.encryptdog.base.common.model.OperationVO;
-import com.gxl.encryptdog.base.enums.ExecResultEnum;
 import com.gxl.encryptdog.base.error.*;
 import com.gxl.encryptdog.core.event.EstimatedTimeEvent;
 import com.gxl.encryptdog.core.event.ProgressEvent;
-import com.gxl.encryptdog.core.event.ResultEvent;
 import com.gxl.encryptdog.core.event.observer.ObServerContext;
 import com.gxl.encryptdog.core.shell.command.HardwareCommand;
 import com.gxl.encryptdog.core.shell.command.impl.HardwareCommandImpl;

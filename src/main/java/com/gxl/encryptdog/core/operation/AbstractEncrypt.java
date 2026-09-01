@@ -30,7 +30,6 @@ import com.gxl.encryptdog.utils.Utils;
 
 import javax.crypto.SecretKey;
 import java.io.*;
-import java.nio.channels.FileChannel;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.PosixFilePermissions;

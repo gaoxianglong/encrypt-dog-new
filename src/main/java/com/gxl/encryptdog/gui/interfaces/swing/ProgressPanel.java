@@ -23,7 +23,6 @@ import com.gxl.encryptdog.gui.application.dto.OperationResultDTO;
 import com.gxl.encryptdog.gui.interfaces.swing.constant.UiConstants;
 import com.gxl.encryptdog.utils.Utils;
 
-import javax.swing.JButton;
 import javax.swing.JComponent;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
