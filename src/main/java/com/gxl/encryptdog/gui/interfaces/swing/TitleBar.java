@@ -28,6 +28,7 @@ import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.UIManager;
+import javax.swing.WindowConstants;
 import java.awt.BorderLayout;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
@@ -222,11 +223,16 @@ public class TitleBar extends JPanel {
         }
 
         /**
-         * 处理按钮点击：关闭或最小化窗口。
+         * 处理按钮点击：关闭或最小化窗口。托盘模式下✕仅隐藏窗口(进程常驻,任务继续),
+         * 无托盘时保持退出语义(降级矩阵)。
          */
         private void handleClick() {
             if (closeButton) {
-                frame.dispose();
+                if (frame.getDefaultCloseOperation() == WindowConstants.HIDE_ON_CLOSE) {
+                    frame.setVisible(false);
+                } else {
+                    frame.dispose();
+                }
             } else {
                 frame.setState(JFrame.ICONIFIED);
             }

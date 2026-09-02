@@ -17,7 +17,7 @@ $ wget https://github.com/gaoxianglong/encrypt-dog-new/releases/download/v2.0.4/
 alias dog = 'java -Xms1g -Xmx1g -Xmn384m -jar encryptdog-2.0.4.jar'
 ```
 ### gui mode
-EncryptDog's primary interface is a Swing graphical UI with a starry-sky particle theme. Add `--gui` to the startup command to launch it (the remaining arguments prefill the form):
+EncryptDog's primary interface is a Swing graphical UI with a purple gradient theme. Add `--gui` to the startup command to launch it (the remaining arguments prefill the form):
 ```shell
 $ java -Xms1g -Xmx1g -Xmn384m -jar encryptdog-2.0.4.jar --gui
 # prefill source files and algorithm
@@ -33,6 +33,7 @@ Interface guide (all UI text is English, the app logo and brand name appear in t
 - **Validation**: failed checks show as inline hints inside the offending field (key errors in the key fields, file errors in the drop zone) or above the main button when there is no specific field; hints fade out after about 2 seconds. Files to encrypt must not end with `.dog`; files to decrypt must end with `.dog`.
 - **Execution**: submitting starts the operation directly — only when `Delete source files after operation` is checked does a themed confirmation dialog ask again first. The window then switches directly to a wide layout (~1200×800). A stats row (Operation / Files / Success / Failed / Elapsed) and a per-file table (No, Source File, Before Size, After Size, State, Progress, Estimated Time, Target File, Result) update in real time with per-file progress bars and percentages; hovering a truncated path shows the full value and hovering a failure icon shows the reason. On completion the app stays on this page and plays a chime; execution errors are shown in red at the top of the card.
 - **Back**: the arrow button under the title bar returns to the form, resetting everything to its initial state (Encrypt mode, AES, all fields and files cleared). Failures never auto-return; the result page stays until you go back yourself.
+- **Menu bar tray**: a menu bar icon appears on launch. The window close button (✕) hides the window instead of quitting — tasks keep running in the background, with live progress shown in the tray menu (`Encrypting 3/12 · 41%`) and tooltip. **Show** restores the window (clicking the Dock icon does the same); **Reveal last output** opens the folder of the most recent successful output file in Finder (disabled until the first success); **Quit** (or ⌘Q) exits — with a themed confirmation dialog if a task is still running. When the window is hidden, a system notification announces completion. Launching the jar again while it is already running simply brings the existing window forward instead of opening a second one.
 ### terminal mode
 A terminal mode is also available (run `dog` without `--gui`; its behavior is unchanged by the GUI):
 ```shell

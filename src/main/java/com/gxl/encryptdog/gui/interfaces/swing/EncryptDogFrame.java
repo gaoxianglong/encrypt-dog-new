@@ -25,6 +25,7 @@ import com.gxl.encryptdog.gui.application.dto.OperationResultDTO;
 import com.gxl.encryptdog.gui.application.error.GuiException;
 import com.gxl.encryptdog.gui.application.service.EncryptOperationAppService;
 import com.gxl.encryptdog.gui.interfaces.swing.constant.UiConstants;
+import com.gxl.encryptdog.gui.interfaces.swing.tray.TrayManager;
 
 import javax.swing.JButton;
 import javax.swing.JFrame;
@@ -272,6 +273,8 @@ public class EncryptDogFrame extends JFrame {
         glassCard.revalidate();
         glassCard.repaint();
         progressPanel.begin(form.isEncrypt() ? "ENCRYPT" : "DECRYPT", form.getEncryptAlgorithm(), files);
+        // 托盘切入干活态(安装失败时钩子短路)
+        TrayManager.onOperationStart(files.size());
         // 进度回调在调度线程触发,统一切换到EDT刷新
         var listener = new OperationListener() {
             @Override
@@ -280,6 +283,8 @@ public class EncryptDogFrame extends JFrame {
                     @Override
                     public void run() {
                         progressPanel.refresh(progress);
+                        // 托盘进度同步(内部节流)
+                        TrayManager.onProgress(progress);
                     }
                 });
             }
@@ -317,6 +322,8 @@ public class EncryptDogFrame extends JFrame {
     private void finishOperation(OperationResultDTO result) {
         progressPanel.finish(result);
         transitioning = false;
+        // 托盘回空闲态,窗口隐藏时弹完成通知
+        TrayManager.onOperationFinished(result);
     }
 
     /**
@@ -326,6 +333,8 @@ public class EncryptDogFrame extends JFrame {
     private void operationFailed(String message) {
         progressPanel.showFailure(message);
         transitioning = false;
+        // 托盘回空闲态(异常路径)
+        TrayManager.onOperationFinished(null);
     }
 
     /**
