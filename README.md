@@ -1,4 +1,4 @@
-<div align=center><img src="https://github.com/gaoxianglong/encryption-dog/blob/master/resources/logo-encryptdog.png"/></div>
+<div align=center><img src="https://raw.githubusercontent.com/gaoxianglong/encrypt-dog-new/refs/heads/master/resources/logo-encryptdog.png"/></div>
 
 [![License](https://img.shields.io/badge/license-Apache%202-4EB1BA.svg)](https://www.apache.org/licenses/LICENSE-2.0.html) ![License](https://img.shields.io/badge/build-passing-brightgreen.svg) ![License](https://img.shields.io/badge/version-2.0.5--RELEASE-blue)
 > Encryption program with high performance, high security and rich functionsm.<br/>
@@ -6,34 +6,29 @@
 
 ## Use of EncryptDog
 ### install
+#### macOS App (recommended)
+Download the DMG, drag EncryptDog into Applications, and launch the app — the graphical interface opens directly:
+```shell
+$ wget https://github.com/gaoxianglong/encrypt-dog-new/releases/download/v2.0.5/EncryptDog-2.0.5.dmg
+```
+#### jar (also supported)
+```shell
+$ wget https://github.com/gaoxianglong/encrypt-dog-new/releases/download/v2.0.5/encryptdog-2.0.5.jar
+alias dog = 'java -Xms1g -Xmx1g -Xmn384m -jar encryptdog-2.0.5.jar'
+```
+#### build from source (also supported)
 ```shell
 git clone git@github.com:gaoxianglong/encrypt-dog-new.git
 mvn package
 alias dog = 'java -Xms1g -Xmx1g -Xmn384m -jar encryptdog-2.0.5.jar'
 ```
-or
-```shell
-$ wget https://github.com/gaoxianglong/encrypt-dog-new/releases/download/v2.0.5/encryptdog-2.0.5.jar
-alias dog = 'java -Xms1g -Xmx1g -Xmn384m -jar encryptdog-2.0.5.jar'
-```
 ### gui mode
-EncryptDog's primary interface is a Swing graphical UI with a purple gradient theme. Add `--gui` to the startup command to launch it (the remaining arguments prefill the form):
+EncryptDog's primary interface is a Swing graphical UI with a purple gradient theme. DMG users launch the app directly; jar users add `--gui` to the startup command (the remaining arguments prefill the form):
 ```shell
 $ java -Xms1g -Xmx1g -Xmn384m -jar encryptdog-2.0.5.jar --gui
 # prefill source files and algorithm
 $ java -jar encryptdog-2.0.5.jar --gui -e -a AES -s /path/to/file1,/path/to/file2
 ```
-Interface guide (all UI text is English, the app logo and brand name appear in the title bar, only macOS is supported):
-- **Mode**: Encrypt / Decrypt segmented switch in the first row of the card. In Decrypt mode both the confirm-key row and the `Local machine only` option are hidden (decryption never uses them).
-- **Source files**: drag & drop files or folders into the drop zone (purple breathing border while hovering, ripple and row fade-in on drop, duplicates ignored); or use `+ Select files` / `+ Select directory` (recurses subdirectories) and remove entries with `Remove selected`.
-- **Secret key**: enter the key (at least 6 digits); enter it twice when encrypting (decrypt asks once). The eye icon inside each key field toggles masked/plaintext display without losing input.
-- **Algorithm**: AES (default) / 3DES / XOR. Selecting XOR in encrypt mode shows a "Use with caution" warning next to the dropdown.
-- **Target directory**: leave blank to output next to the source files; a Browse… button is embedded in the field.
-- **Options**: `Delete source files after operation` (a themed confirmation dialog asks again before executing), `Local machine only` (highest security, same as `-o`; encrypt mode only).
-- **Validation**: failed checks show as inline hints inside the offending field (key errors in the key fields, file errors in the drop zone) or above the main button when there is no specific field; hints fade out after about 2 seconds. Files to encrypt must not end with `.dog`; files to decrypt must end with `.dog`.
-- **Execution**: submitting starts the operation directly — only when `Delete source files after operation` is checked does a themed confirmation dialog ask again first. The window then switches directly to a wide layout (~1200×800). A stats row (Operation / Files / Success / Failed / Elapsed) and a per-file table (No, Source File, Before Size, After Size, State, Progress, Estimated Time, Target File, Result) update in real time with per-file progress bars and percentages; hovering a truncated path shows the full value and hovering a failure icon shows the reason. On completion the app stays on this page and plays a chime; execution errors are shown in red at the top of the card.
-- **Back**: the arrow button under the title bar returns to the form, resetting everything to its initial state (Encrypt mode, AES, all fields and files cleared). Failures never auto-return; the result page stays until you go back yourself.
-- **Menu bar tray**: a menu bar icon appears on launch. The window close button (✕) hides the window instead of quitting — tasks keep running in the background, with live progress shown in the tray menu (`Encrypting 3/12 · 41%`) and tooltip. **Show** restores the window (clicking the Dock icon does the same); **Reveal last output** opens the folder of the most recent successful output file in Finder (disabled until the first success); **Quit** (or ⌘Q) exits — with a themed confirmation dialog if a task is still running. When the window is hidden, a system notification announces completion. Launching the jar again while it is already running simply brings the existing window forward instead of opening a second one.
 ### terminal mode
 A terminal mode is also available (run `dog` without `--gui`; its behavior is unchanged by the GUI):
 ```shell
