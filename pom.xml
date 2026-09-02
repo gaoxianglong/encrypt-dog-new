@@ -5,8 +5,9 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>org.example</groupId>
     <artifactId>encryptdog</artifactId>
-    <version>2.0.4</version>
+    <version>2.0.5</version>
     <description>
+        2.0.5-RELEASE 支持拖盘模式,修复一些已知问题
         2.0.4-RELEASE 新增GUI
         2.0.3-RELEASE 增加加/解密操作的相关日志信息
         2.0.2-RELEASE 增加IV向量安全性
