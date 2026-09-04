@@ -70,12 +70,66 @@ public class TrayManager {
     private static final String MENU_SHOW           = "Show";
     private static final String MENU_REVEAL         = "Reveal last output";
     private static final String MENU_QUIT           = "Quit";
+    /**
+     * 更新项文案(全英文无emoji,与既有菜单语言一致)
+     */
+    private static final String MENU_UPDATE_CHECK       = "Check for updates";
+    private static final String MENU_UPDATE_CHECKING    = "Checking for updates...";
+    private static final String MENU_UPDATE_AVAILABLE   = "Update available %s";
+    private static final String MENU_UPDATE_DOWNLOADING = "Downloading %s · %d%%";
+    private static final String MENU_UPDATE_OPEN        = "Open downloaded update";
 
     /**
      * 托盘状态:空闲/干活中
      */
     private enum TrayState {
         IDLE, WORKING
+    }
+
+    /**
+     * 更新项插槽状态(与更新能力共享的展示状态机)
+     */
+    public enum UpdateItemState {
+        /**
+         * 常态:可点击检查
+         */
+        CHECK,
+        /**
+         * 检查进行中(禁用)
+         */
+        CHECKING,
+        /**
+         * 已发现新版本且未下载
+         */
+        AVAILABLE,
+        /**
+         * 下载进行中(禁用)
+         */
+        DOWNLOADING,
+        /**
+         * 下载完成且缓存存在
+         */
+        DOWNLOADED
+    }
+
+    /**
+     * 更新项点击回调(由更新能力桥接注册,托盘不反向依赖网络层)
+     */
+    public interface UpdateActionHandler {
+        /**
+         * 点击Check for updates
+         */
+        void onCheckForUpdates();
+
+        /**
+         * 点击Update available {version}
+         */
+        void onUpdateAvailable();
+
+        /**
+         * 点击Open downloaded update
+         */
+        void onOpenDownloaded();
     }
 
     /**
@@ -107,6 +161,34 @@ public class TrayManager {
      * 托盘是否安装成功
      */
     private static volatile boolean   installed;
+    /**
+     * 更新项插槽状态
+     */
+    private static volatile UpdateItemState updateItemState = UpdateItemState.CHECK;
+    /**
+     * 更新项版本号(已归一化)
+     */
+    private static volatile String    updateVersion;
+    /**
+     * 下载进度百分比,-1表示未知
+     */
+    private static volatile int       updatePct = -1;
+    /**
+     * 已下载DMG缓存文件(下载完成态渲染时校验存在性)
+     */
+    private static volatile File      updateDmg;
+    /**
+     * 干活态最近一次状态文案(更新项刷新时复用)
+     */
+    private static String             workingText = "";
+    /**
+     * 更新项点击回调
+     */
+    private static volatile UpdateActionHandler updateActionHandler;
+    /**
+     * 回到空闲态钩子(更新能力挂起弹窗的补弹入口)
+     */
+    private static volatile Runnable  idleHook;
 
     private TrayManager() {
     }
@@ -199,6 +281,7 @@ public class TrayManager {
                 }
             }
             applyIdle();
+            runIdleHook();
             if (frame != null && !frame.isVisible()) {
                 trayIcon.displayMessage(UiConstants.APP_NAME, buildSummary(result), TrayIcon.MessageType.NONE);
             }
@@ -220,6 +303,77 @@ public class TrayManager {
             frame.toFront();
             frame.requestFocus();
         });
+    }
+
+    /**
+     * 是否处于干活态(任务执行中),供更新弹窗延迟判断使用
+     * @return true=任务执行中
+     */
+    public static boolean isBusy() {
+        return state == TrayState.WORKING;
+    }
+
+    /**
+     * 设置更新项插槽状态并刷新菜单(托盘未安装时静默忽略)
+     *
+     * @param itemState 插槽状态
+     * @param version 版本号(仅AVAILABLE/DOWNLOADING使用,可空)
+     * @param pct 下载进度百分比(仅DOWNLOADING使用,-1表示未知)
+     */
+    public static void setUpdateItemState(UpdateItemState itemState, String version, int pct) {
+        setUpdateItemState(itemState, version, pct, null);
+    }
+
+    /**
+     * 设置更新项插槽状态并刷新菜单(含已下载DMG文件,供下载完成态校验缓存存在性)
+     *
+     * @param itemState 插槽状态
+     * @param version 版本号(仅AVAILABLE/DOWNLOADING使用,可空)
+     * @param pct 下载进度百分比(仅DOWNLOADING使用,-1表示未知)
+     * @param dmg 已下载DMG文件(仅DOWNLOADED使用,可空)
+     */
+    public static void setUpdateItemState(UpdateItemState itemState, String version, int pct, File dmg) {
+        updateDmg = dmg;
+        if (!installed) {
+            return;
+        }
+        updateItemState = itemState;
+        updateVersion = version;
+        updatePct = pct;
+        SwingUtilities.invokeLater(() -> {
+            if (state == TrayState.WORKING) {
+                applyWorking(workingText);
+            } else {
+                applyIdle();
+            }
+        });
+    }
+
+    /**
+     * 注册更新项点击回调(由更新能力桥接注册)
+     * @param handler 点击回调
+     */
+    public static void setUpdateActionHandler(UpdateActionHandler handler) {
+        updateActionHandler = handler;
+    }
+
+    /**
+     * 注册回到空闲态钩子:每次任务结束回到空闲态时触发(更新能力用于补弹挂起的更新弹窗)
+     * @param hook 空闲钩子
+     */
+    public static void setIdleHook(Runnable hook) {
+        idleHook = hook;
+    }
+
+    /**
+     * 弹出系统通知(托盘未安装时静默忽略),消息全英文
+     * @param message 通知内容
+     */
+    public static void notify(String message) {
+        if (!installed || null == trayIcon) {
+            return;
+        }
+        SwingUtilities.invokeLater(() -> trayIcon.displayMessage(UiConstants.APP_NAME, message, TrayIcon.MessageType.NONE));
     }
 
     /**
@@ -262,7 +416,7 @@ public class TrayManager {
     }
 
     /**
-     * 刷新空闲态菜单(Show/Reveal last output/Quit)与tooltip
+     * 刷新空闲态菜单(Show/Reveal last output/更新检查项/Quit)与tooltip
      */
     private static void applyIdle() {
         menu.removeAll();
@@ -273,6 +427,7 @@ public class TrayManager {
         revealItem.setEnabled(lastOutputFile != null);
         revealItem.addActionListener(e -> reveal());
         menu.add(revealItem);
+        addUpdateItem();
         var quitItem = new MenuItem(MENU_QUIT);
         quitItem.addActionListener(e -> requestQuit());
         menu.add(quitItem);
@@ -281,11 +436,12 @@ public class TrayManager {
     }
 
     /**
-     * 刷新干活态菜单(Show/禁用状态行/Quit)与tooltip
+     * 刷新干活态菜单(Show/禁用状态行/更新检查项/Quit)与tooltip
      *
      * @param text 状态行与tooltip文案
      */
     private static void applyWorking(String text) {
+        workingText = text;
         menu.removeAll();
         var showItem = new MenuItem(MENU_SHOW);
         showItem.addActionListener(e -> restoreWindow());
@@ -293,11 +449,85 @@ public class TrayManager {
         statusItem = new MenuItem(text);
         statusItem.setEnabled(false);
         menu.add(statusItem);
+        addUpdateItem();
         var quitItem = new MenuItem(MENU_QUIT);
         quitItem.addActionListener(e -> requestQuit());
         menu.add(quitItem);
         trayIcon.setPopupMenu(menu);
         trayIcon.setToolTip(text);
+    }
+
+    /**
+     * 渲染更新检查项插槽:位于Reveal last output/状态行之后、Quit之前,
+     * 恰渲染一项,按更新状态切换文案与可用性
+     */
+    private static void addUpdateItem() {
+        var handler = updateActionHandler;
+        MenuItem item = null;
+        switch (updateItemState) {
+            case CHECK:
+                item = new MenuItem(MENU_UPDATE_CHECK);
+                item.addActionListener(e -> {
+                    if (null != handler) {
+                        handler.onCheckForUpdates();
+                    }
+                });
+                break;
+            case CHECKING:
+                item = new MenuItem(MENU_UPDATE_CHECKING);
+                item.setEnabled(false);
+                break;
+            case AVAILABLE:
+                item = new MenuItem(String.format(MENU_UPDATE_AVAILABLE, null == updateVersion ? "" : updateVersion));
+                item.addActionListener(e -> {
+                    if (null != handler) {
+                        handler.onUpdateAvailable();
+                    }
+                });
+                break;
+            case DOWNLOADING:
+                item = new MenuItem(String.format(MENU_UPDATE_DOWNLOADING, null == updateVersion ? "" : updateVersion,
+                        Math.max(updatePct, 0)));
+                item.setEnabled(false);
+                break;
+            case DOWNLOADED:
+                if (null == updateDmg || !updateDmg.exists()) {
+                    // 缓存被手动删除:回退为已发现新版本且未下载,点击重新弹下载确认框
+                    item = new MenuItem(
+                            String.format(MENU_UPDATE_AVAILABLE, null == updateVersion ? "" : updateVersion));
+                    item.addActionListener(e -> {
+                        if (null != handler) {
+                            handler.onUpdateAvailable();
+                        }
+                    });
+                } else {
+                    item = new MenuItem(MENU_UPDATE_OPEN);
+                    item.addActionListener(e -> {
+                        if (null != handler) {
+                            handler.onOpenDownloaded();
+                        }
+                    });
+                }
+                break;
+            default:
+                return;
+        }
+        menu.add(item);
+    }
+
+    /**
+     * 触发回到空闲态钩子,失败静默(不影响托盘主流程)
+     */
+    private static void runIdleHook() {
+        var hook = idleHook;
+        if (null == hook) {
+            return;
+        }
+        try {
+            hook.run();
+        } catch (Throwable e) {
+            // 空闲钩子异常不影响托盘
+        }
     }
 
     /**

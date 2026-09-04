@@ -58,9 +58,13 @@ public class ThemedConfirmDialog extends JDialog {
      */
     private static final int     WIDTH               = 440;
     /**
-     * 弹窗高度
+     * 弹窗高度(双按钮)
      */
     private static final int     HEIGHT              = 210;
+    /**
+     * 弹窗高度(单按钮紧凑模式)
+     */
+    private static final int     HEIGHT_COMPACT      = 160;
     /**
      * 弹窗圆角半径
      */
@@ -116,7 +120,9 @@ public class ThemedConfirmDialog extends JDialog {
         setUndecorated(true);
         // 窗口背景全透明,圆角外区域不出现系统默认灰色
         setBackground(new Color(0, 0, 0, 0));
-        setSize(WIDTH, HEIGHT);
+        // keepText为空时单按钮模式:紧凑高度、无副文案
+        var singleButton = null == keepText || keepText.isEmpty();
+        setSize(WIDTH, singleButton ? HEIGHT_COMPACT : HEIGHT);
         setLocationRelativeTo(owner);
 
         JPanel content = new JPanel() {
@@ -152,27 +158,36 @@ public class ThemedConfirmDialog extends JDialog {
         messageLabel.setBounds(PADDING_X, 64, WIDTH - PADDING_X * 2, 22);
         content.add(messageLabel);
 
-        // 副文案
-        JLabel subLabel = new JLabel(subMessage);
-        subLabel.setForeground(UiConstants.TEXT_SECONDARY);
-        subLabel.setFont(UIManager.getFont(DEFAULT_FONT_KEY).deriveFont(Font.PLAIN, UiConstants.SMALL_FONT_SIZE));
-        subLabel.setBounds(PADDING_X, 96, WIDTH - PADDING_X * 2, 20);
-        content.add(subLabel);
+        // 副文案(单按钮模式无副文案)
+        if (!singleButton) {
+            JLabel subLabel = new JLabel(subMessage);
+            subLabel.setForeground(UiConstants.TEXT_SECONDARY);
+            subLabel.setFont(UIManager.getFont(DEFAULT_FONT_KEY).deriveFont(Font.PLAIN, UiConstants.SMALL_FONT_SIZE));
+            subLabel.setBounds(PADDING_X, 96, WIDTH - PADDING_X * 2, 20);
+            content.add(subLabel);
+        }
 
-        // 按钮行:次要描边按钮左、主渐变按钮右,底部右对齐
-        int buttonsY = HEIGHT - BUTTON_BOTTOM_GAP - BUTTON_HEIGHT;
-        JButton keepButton = new OutlineButton(keepText);
-        keepButton.setBounds(WIDTH - PADDING_X - BUTTON_WIDTH * 2 - BUTTON_GAP, buttonsY, BUTTON_WIDTH, BUTTON_HEIGHT);
-        keepButton.addActionListener(new AbstractAction() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                dispose();
-            }
-        });
-        content.add(keepButton);
+        // 按钮行:次要描边按钮左、主渐变按钮右,底部右对齐;单按钮模式主按钮居中
+        int buttonsY = (singleButton ? HEIGHT_COMPACT : HEIGHT) - BUTTON_BOTTOM_GAP - BUTTON_HEIGHT;
+        if (!singleButton) {
+            JButton keepButton = new OutlineButton(keepText);
+            keepButton.setBounds(WIDTH - PADDING_X - BUTTON_WIDTH * 2 - BUTTON_GAP, buttonsY, BUTTON_WIDTH,
+                    BUTTON_HEIGHT);
+            keepButton.addActionListener(new AbstractAction() {
+                @Override
+                public void actionPerformed(ActionEvent e) {
+                    dispose();
+                }
+            });
+            content.add(keepButton);
+        }
 
         JButton confirmButton = new GradientButton(confirmText);
-        confirmButton.setBounds(WIDTH - PADDING_X - BUTTON_WIDTH, buttonsY, BUTTON_WIDTH, BUTTON_HEIGHT);
+        if (singleButton) {
+            confirmButton.setBounds((WIDTH - BUTTON_WIDTH) / 2, buttonsY, BUTTON_WIDTH, BUTTON_HEIGHT);
+        } else {
+            confirmButton.setBounds(WIDTH - PADDING_X - BUTTON_WIDTH, buttonsY, BUTTON_WIDTH, BUTTON_HEIGHT);
+        }
         confirmButton.addActionListener(new AbstractAction() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -212,7 +227,7 @@ public class ThemedConfirmDialog extends JDialog {
      * @param message 主文案
      * @param subMessage 副文案
      * @param confirmText 确认按钮文本
-     * @param keepText 次要按钮文本
+     * @param keepText 次要按钮文本,为null或空串时单按钮模式(主按钮居中)
      * @return true=点击确认按钮,false=次要按钮/ESC/关闭
      */
     public static boolean show(Window owner, String title, String message, String subMessage,
@@ -220,6 +235,17 @@ public class ThemedConfirmDialog extends JDialog {
         ThemedConfirmDialog dialog = new ThemedConfirmDialog(owner, title, message, subMessage, confirmText, keepText);
         dialog.setVisible(true);
         return dialog.confirmed;
+    }
+
+    /**
+     * 弹出单按钮提示弹窗(无返回值,OK即关闭),用于纯提示场景
+     * @param owner 父窗口
+     * @param title 标题
+     * @param message 主文案
+     * @param okText 按钮文本
+     */
+    public static void showMessage(Window owner, String title, String message, String okText) {
+        new ThemedConfirmDialog(owner, title, message, "", okText, null).setVisible(true);
     }
 
     /**

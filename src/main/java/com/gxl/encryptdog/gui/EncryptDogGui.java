@@ -25,6 +25,7 @@ import com.gxl.encryptdog.gui.interfaces.swing.LogoUtil;
 import com.gxl.encryptdog.gui.interfaces.swing.constant.UiConstants;
 import com.gxl.encryptdog.gui.interfaces.swing.tray.SingleInstanceGuard;
 import com.gxl.encryptdog.gui.interfaces.swing.tray.TrayManager;
+import com.gxl.encryptdog.gui.interfaces.swing.update.UpdateUiBridge;
 
 import javax.swing.JFrame;
 import javax.swing.SwingUtilities;
@@ -78,6 +79,8 @@ public class EncryptDogGui {
                 frame.setVisible(true);
                 // Dock图标:必须在EDT且窗口可见后设置(macOS AWT在窗口首次显示时才关联Dock,过早设置会被激活过程重置)
                 installDockIcon();
+                // 更新检查:托盘安装后(无论成败)启动一次后台检查,托盘降级时弹窗与下载仍可用
+                UpdateUiBridge.init(frame);
             }
         });
     }
