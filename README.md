@@ -31,6 +31,8 @@ $ java -jar encryptdog-2.0.5.jar --gui -e -a AES -s /path/to/file1,/path/to/file
 ```
 ### double-click .dog to decrypt (macOS App)
 DMG users can double-click a .dog file in Finder: the GUI opens directly with decrypt mode and the file list prefilled (the secret key is still entered by hand, nothing runs automatically). If the first double-click asks which app to open with, choose EncryptDog once. jar mode has no file association.
+
+Once the app is installed, all .dog files show the EncryptDog icon in Finder. If the icon does not refresh, restart Finder or log out and back in.
 ### terminal mode
 A terminal mode is also available (run `dog` without `--gui`; its behavior is unchanged by the GUI):
 ```shell

@@ -88,9 +88,16 @@ jpackage --type app-image \
     --input "$STAGE_DIR" \
     --dest "$DIST"
 rm -rf "$STAGE_DIR"
+INFO_PLIST="$DIST/${APP_NAME}.app/Contents/Info.plist"
+
+# 文档图标:与Dock图标同源,拷贝进bundle Resources并注入图标键
+# (jpackage文件关联的icon属性仅Linux生效,macOS必须后处理注入)
+ICON_RESOURCE="$DIST/${APP_NAME}.app/Contents/Resources/dog-document.icns"
+cp "/tmp/${APP_NAME}.icns" "$ICON_RESOURCE"
+/usr/libexec/PlistBuddy -c "Add :CFBundleDocumentTypes:0:CFBundleTypeIconFile string dog-document" "$INFO_PLIST"
+/usr/libexec/PlistBuddy -c "Add :UTExportedTypeDeclarations:0:UTTypeIconFile string dog-document" "$INFO_PLIST"
 
 # 校验文件关联声明写入Info.plist(防jpackage参数回归:声明缺失时双击.dog无法唤起GUI)
-INFO_PLIST="$DIST/${APP_NAME}.app/Contents/Info.plist"
 if /usr/libexec/PlistBuddy -c "Print :CFBundleDocumentTypes" "$INFO_PLIST" 2>/dev/null | grep -q "dog"; then
     echo "[build-mac] 文件关联声明已写入: .dog -> $APP_NAME"
 else
@@ -98,6 +105,15 @@ else
     exit 1
 fi
 
+# 校验文档图标声明(icns文件与两个图标键均存在,失败信息与关联声明断言区分)
+if [ -f "$ICON_RESOURCE" ] \
+    && /usr/libexec/PlistBuddy -c "Print :CFBundleDocumentTypes:0:CFBundleTypeIconFile" "$INFO_PLIST" 2>/dev/null | grep -q "dog-document" \
+    && /usr/libexec/PlistBuddy -c "Print :UTExportedTypeDeclarations:0:UTTypeIconFile" "$INFO_PLIST" 2>/dev/null | grep -q "dog-document"; then
+    echo "[build-mac] 文档图标声明已写入: .dog 显示品牌图标"
+else
+    echo "[build-mac] 错误: .dog 文档图标声明缺失(icns文件或图标键), 打包中止" >&2
+    exit 1
+fi
 echo "[build-mac] 完成: $DIST/${APP_NAME}.app"
 
 # 可选: dmg 安装镜像(基于已产出的 app-image,不重复 jlink)
