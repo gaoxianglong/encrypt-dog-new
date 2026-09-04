@@ -83,10 +83,21 @@ jpackage --type app-image \
     --main-jar "encryptdog-${VERSION}.jar" \
     --arguments "--gui" \
     --java-options "-Xms1g -Xmx1g -Xmn384m" \
+    --file-associations file-associations.properties \
     --icon "/tmp/${APP_NAME}.icns" \
     --input "$STAGE_DIR" \
     --dest "$DIST"
 rm -rf "$STAGE_DIR"
+
+# 校验文件关联声明写入Info.plist(防jpackage参数回归:声明缺失时双击.dog无法唤起GUI)
+INFO_PLIST="$DIST/${APP_NAME}.app/Contents/Info.plist"
+if /usr/libexec/PlistBuddy -c "Print :CFBundleDocumentTypes" "$INFO_PLIST" 2>/dev/null | grep -q "dog"; then
+    echo "[build-mac] 文件关联声明已写入: .dog -> $APP_NAME"
+else
+    echo "[build-mac] 错误: Info.plist 缺少 .dog 文件关联声明, 打包中止" >&2
+    exit 1
+fi
+
 echo "[build-mac] 完成: $DIST/${APP_NAME}.app"
 
 # 可选: dmg 安装镜像(基于已产出的 app-image,不重复 jlink)
