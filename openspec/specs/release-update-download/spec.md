@@ -36,12 +36,12 @@ GUI 启动完成后，系统 SHALL 在后台线程查询 GitHub 最新 release �
 
 #### Scenario: 更高版本且有 dmg 资产
 
-- **WHEN** 最新 release tag 为 v2.1.0（高于当前 2.0.6）且资产含 EncryptDog-2.1.0.dmg
+- **WHEN** 最新 release tag 为 v2.1.0（高于当前 2.0.7）且资产含 EncryptDog-2.1.0.dmg
 - **THEN** 判定为新版本并进入弹窗确认流程
 
 #### Scenario: 版本相同
 
-- **WHEN** 最新 release tag 为 v2.0.6（与当前版本相同）
+- **WHEN** 最新 release tag 为 v2.0.7（与当前版本相同）
 - **THEN** 判定为无新版本，静默结束
 
 #### Scenario: 无 dmg 资产

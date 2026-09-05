@@ -208,8 +208,8 @@ public class TrayManager {
             if (!SystemTray.isSupported()) {
                 return false;
             }
-            var icon22 = LogoUtil.loadImage(UiConstants.LOGO_RESOURCE, TRAY_ICON_SIZE);
-            var icon44 = LogoUtil.loadImage(UiConstants.LOGO_RESOURCE, TRAY_ICON_SIZE_2X);
+            var icon22 = LogoUtil.loadLogo(TRAY_ICON_SIZE);
+            var icon44 = LogoUtil.loadLogo(TRAY_ICON_SIZE_2X);
             if (icon22 == null || icon44 == null) {
                 return false;
             }

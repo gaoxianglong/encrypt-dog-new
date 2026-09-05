@@ -116,7 +116,7 @@ public class TitleBar extends JPanel {
         titleBox.setOpaque(false);
         titleBox.setLayout(new BoxLayout(titleBox, BoxLayout.X_AXIS));
         titleBox.setBorder(BorderFactory.createEmptyBorder(0, TITLE_PADDING_LEFT, 0, 0));
-        JLabel titleIconLabel = new JLabel(LogoUtil.loadLogo(UiConstants.LOGO_TITLE_SIZE));
+        JLabel titleIconLabel = new JLabel(LogoUtil.loadTitleLogo(UiConstants.LOGO_TITLE_SIZE));
         // 显式18x18尺寸约束,ImageIcon按label尺寸缩放显示
         titleIconLabel.setPreferredSize(new Dimension(UiConstants.LOGO_TITLE_SIZE, UiConstants.LOGO_TITLE_SIZE));
         titleIconLabel.setMaximumSize(new Dimension(UiConstants.LOGO_TITLE_SIZE, UiConstants.LOGO_TITLE_SIZE));

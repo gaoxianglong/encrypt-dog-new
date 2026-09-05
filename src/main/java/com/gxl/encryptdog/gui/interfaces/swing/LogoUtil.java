@@ -40,22 +40,46 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public final class LogoUtil {
     /**
-     * 图标缓存(资源+尺寸为键):避免在paint路径中反复解码/扫描/缩放图片
+     * 图标缓存(资源+尺寸+内框因子为键):避免在paint路径中反复解码/扫描/缩放图片
      */
     private static final Map<String, ImageIcon> ICON_CACHE = new ConcurrentHashMap<>();
+
+    /**
+     * logo内框因子:内容收进显示槽位的约82%内框,留出与macOS标准图标惯例
+     * 一致的约18%视觉留白(与Dock路径loadRoundedImage同约定),避免观感偏大。
+     * 托盘与Dock均沿用此约定(托盘22pt槽位内容约18pt)
+     */
+    private static final double LOGO_INSET = 0.82;
+
+    /**
+     * 标题栏logo内框因子:标题栏槽位(28px)远大于品牌文字(22pt)视觉高度,
+     * 0.82内框下logo仍压制文字,收进约64%内框后图形约18px与文字平衡
+     */
+    private static final double LOGO_TITLE_INSET = 0.64;
 
     private LogoUtil() {
     }
 
     /**
      * 加载指定显示尺寸的logo图标,图片等比缩放适配显示区域。
-     * Icon宽高不超过显示尺寸且保持原图宽高比,JLabel对超尺寸Icon是
-     * 裁切而非缩放,等比缩放后Icon不超槽位,居中显示不变形。
+     * logo内容收进约82%内框(留约18%视觉留白),Icon宽高不超过内框且保持
+     * 原图宽高比,JLabel对超尺寸Icon是裁切而非缩放,等比缩放后Icon不超槽位,
+     * 居中显示不变形。
      * @param size 显示尺寸(逻辑像素)
      * @return
      */
     public static ImageIcon loadLogo(int size) {
-        return loadImage(UiConstants.LOGO_RESOURCE, size);
+        return loadImage(UiConstants.LOGO_RESOURCE, size, LOGO_INSET);
+    }
+
+    /**
+     * 加载标题栏logo图标:内容收进约64%内框,图形约18px与22pt品牌文字视觉平衡。
+     * 其余行为与loadLogo一致(等比缩放、不超槽位、居中显示)
+     * @param size 显示尺寸(逻辑像素)
+     * @return
+     */
+    public static ImageIcon loadTitleLogo(int size) {
+        return loadImage(UiConstants.LOGO_RESOURCE, size, LOGO_TITLE_INSET);
     }
 
     /**
@@ -66,7 +90,19 @@ public final class LogoUtil {
      * @return
      */
     public static ImageIcon loadImage(String resource, int size) {
-        String key = resource + "@" + size;
+        return loadImage(resource, size, 1.0);
+    }
+
+    /**
+     * 按显示区域等比缩放加载资源图片,缩放基准为显示尺寸乘内框因子,
+     * 保持原图宽高比且不超缩放基准,避免非方形图片被拉伸变形或超尺寸被裁切
+     * @param resource 资源路径(如logo.png)
+     * @param size 显示尺寸(逻辑像素)
+     * @param insetFactor 内框因子(1.0=顶满槽位,0.82=收进82%内框)
+     * @return
+     */
+    private static ImageIcon loadImage(String resource, int size, double insetFactor) {
+        String key = resource + "@" + size + "@" + insetFactor;
         ImageIcon cached = ICON_CACHE.get(key);
         if (cached != null) {
             return cached;
@@ -80,8 +116,9 @@ public final class LogoUtil {
             var bounds = alphaBounds(image);
             var content = Objects.isNull(bounds)
                     ? image : image.getSubimage(bounds.x, bounds.y, bounds.width, bounds.height);
-            // 等比缩放: 以宽高中较小者为基准,Icon不超槽位,由JLabel居中显示
-            var scale = Math.min((double) size / content.getWidth(), (double) size / content.getHeight());
+            // 等比缩放: 以宽高中较小者为基准,缩放基准=显示尺寸×内框因子,Icon不超槽位,由JLabel居中显示
+            var base = size * insetFactor;
+            var scale = Math.min(base / content.getWidth(), base / content.getHeight());
             var width = (int) Math.round(content.getWidth() * scale);
             var height = (int) Math.round(content.getHeight() * scale);
             // 同步绘制缩放,规避getScaledInstance异步缩放未完成导致的残缺渲染

@@ -90,10 +90,40 @@ jpackage --type app-image \
 rm -rf "$STAGE_DIR"
 INFO_PLIST="$DIST/${APP_NAME}.app/Contents/Info.plist"
 
-# 文档图标:与Dock图标同源,拷贝进bundle Resources并注入图标键
+# 文档图标:独立品牌图标(dog-document.png竖版图形自带轮廓,仅82%内框收边不套圆角),
+# 独立生成icns拷进bundle Resources并注入图标键
 # (jpackage文件关联的icon属性仅Linux生效,macOS必须后处理注入)
 ICON_RESOURCE="$DIST/${APP_NAME}.app/Contents/Resources/dog-document.icns"
-cp "/tmp/${APP_NAME}.icns" "$ICON_RESOURCE"
+DOC_TMP_DIR="$(mktemp -d)"
+DOC_ICONSET="$DOC_TMP_DIR/doc.iconset"
+mkdir -p "$DOC_ICONSET"
+DOC_ICON_SRC="src/main/resources/dog-document.png"
+DOC_SRC="$DOC_ICON_SRC"
+if python3 -c "import PIL" >/dev/null 2>&1; then
+    python3 - "$DOC_ICON_SRC" "$DOC_TMP_DIR/doc_inset.png" <<'PYEOF'
+import sys
+from PIL import Image
+src, dst = sys.argv[1], sys.argv[2]
+# 竖版图形收进1024画布82%内框居中(与项目图标边距约定一致),不套圆角遮罩保留自带轮廓
+INNER = int(1024 * 0.82)
+img = Image.open(src).convert("RGBA")
+scale = min(INNER / img.width, INNER / img.height)
+img = img.resize((round(img.width * scale), round(img.height * scale)), Image.LANCZOS)
+canvas = Image.new("RGBA", (1024, 1024), (0, 0, 0, 0))
+canvas.paste(img, ((1024 - img.width) // 2, (1024 - img.height) // 2))
+canvas.save(dst)
+PYEOF
+    DOC_SRC="$DOC_TMP_DIR/doc_inset.png"
+    echo "[build-mac] 文档图标已内框预处理(82%内框,不套圆角)"
+else
+    echo "[build-mac] 未找到PIL,降级使用原始文档图标"
+fi
+for size in 16 32 128 256 512; do
+    sips -z "$size" "$size" "$DOC_SRC" --out "$DOC_ICONSET/icon_${size}x${size}.png" >/dev/null
+    sips -z "$((size * 2))" "$((size * 2))" "$DOC_SRC" --out "$DOC_ICONSET/icon_${size}x${size}@2x.png" >/dev/null
+done
+iconutil -c icns "$DOC_ICONSET" -o "$ICON_RESOURCE"
+rm -rf "$DOC_TMP_DIR"
 /usr/libexec/PlistBuddy -c "Add :CFBundleDocumentTypes:0:CFBundleTypeIconFile string dog-document" "$INFO_PLIST"
 /usr/libexec/PlistBuddy -c "Add :UTExportedTypeDeclarations:0:UTTypeIconFile string dog-document" "$INFO_PLIST"
 
@@ -114,6 +144,13 @@ else
     echo "[build-mac] 错误: .dog 文档图标声明缺失(icns文件或图标键), 打包中止" >&2
     exit 1
 fi
+
+# 校验文档图标独立于应用图标(防产线被改回拷贝app icns)
+if cmp -s "/tmp/${APP_NAME}.icns" "$ICON_RESOURCE"; then
+    echo "[build-mac] 错误: 文档图标与应用图标同源(产线被改回拷贝), 打包中止" >&2
+    exit 1
+fi
+echo "[build-mac] 文档图标独立生成: 与应用图标不同源"
 echo "[build-mac] 完成: $DIST/${APP_NAME}.app"
 
 # 可选: dmg 安装镜像(基于已产出的 app-image,不重复 jlink)
