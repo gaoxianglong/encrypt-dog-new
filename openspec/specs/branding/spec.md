@@ -21,7 +21,7 @@
 
 #### Scenario: 启动 banner 拼写新名
 
-- **WHEN** 用户运行 `java -jar encryptdog-2.0.7.jar -h` 查看启动输出
+- **WHEN** 用户运行 `java -jar encryptdog-2.0.8.jar -h` 查看启动输出
 - **THEN** banner 艺术字拼写 "EncryptDog"，不呈现 "EncryptionDog" 形态
 
 ### Requirement: CLI 命令名
@@ -30,17 +30,17 @@ CLI SHALL 以 `encryptdog` 作为命令名呈现于 usage 与帮助输出，SHAL
 
 #### Scenario: 帮助输出命令名
 
-- **WHEN** 用户运行 `java -jar encryptdog-2.0.7.jar -h` 查看帮助
+- **WHEN** 用户运行 `java -jar encryptdog-2.0.8.jar -h` 查看帮助
 - **THEN** usage 首行以 `Usage: encryptdog` 开头，输出中不出现 `encrypt-dog`
 
 ### Requirement: 构建产物命名
 
-Maven 构建 SHALL 产出 jar `encryptdog-<version>.jar`（如 `encryptdog-2.0.7.jar`），macOS 打包 SHALL 产出 `EncryptDog.app` 与 `EncryptDog-<version>.dmg`；SHALL NOT 产出 `dog-<version>.jar` 命名的 jar。
+Maven 构建 SHALL 产出 jar `encryptdog-<version>.jar`（如 `encryptdog-2.0.8.jar`），macOS 打包 SHALL 产出 `EncryptDog.app` 与 `EncryptDog-<version>.dmg`；SHALL NOT 产出 `dog-<version>.jar` 命名的 jar。
 
 #### Scenario: 构建产物名称
 
 - **WHEN** 执行 `mvn package` 与 `build-mac.sh` 打包
-- **THEN** `target/` 下存在 `encryptdog-2.0.7.jar` 且不存在 `dog-2.0.7.jar`；`dist/` 下存在 `EncryptDog.app` 与 `EncryptDog-2.0.7.dmg`
+- **THEN** `target/` 下存在 `encryptdog-2.0.8.jar` 且不存在 `dog-2.0.8.jar`；`dist/` 下存在 `EncryptDog.app` 与 `EncryptDog-2.0.8.dmg`
 
 ### Requirement: 文档品牌引用
 

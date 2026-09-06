@@ -1,6 +1,6 @@
 <div align=center><img src="https://raw.githubusercontent.com/gaoxianglong/encrypt-dog-new/refs/heads/master/resources/logo-encryptdog.png"/></div>
 
-[![License](https://img.shields.io/badge/license-Apache%202-4EB1BA.svg)](https://www.apache.org/licenses/LICENSE-2.0.html) ![License](https://img.shields.io/badge/build-passing-brightgreen.svg) ![License](https://img.shields.io/badge/version-2.0.7--RELEASE-blue)
+[![License](https://img.shields.io/badge/license-Apache%202-4EB1BA.svg)](https://www.apache.org/licenses/LICENSE-2.0.html) ![License](https://img.shields.io/badge/build-passing-brightgreen.svg) ![License](https://img.shields.io/badge/version-2.0.8--RELEASE-blue)
 > Encryption program with high performance, high security and rich functionsm.<br/>
 > Supports binding the same physical device for file encryption and decryption.<br/>
 
@@ -9,25 +9,25 @@
 #### macOS App (recommended)
 Download the DMG, drag EncryptDog into Applications, and launch the app — the graphical interface opens directly:
 ```shell
-$ wget https://github.com/gaoxianglong/encrypt-dog-new/releases/download/v2.0.7/EncryptDog-2.0.7.dmg
+$ wget https://github.com/gaoxianglong/encrypt-dog-new/releases/download/v2.0.8/EncryptDog-2.0.8.dmg
 ```
 #### jar (also supported)
 ```shell
-$ wget https://github.com/gaoxianglong/encrypt-dog-new/releases/download/v2.0.7/encryptdog-2.0.7.jar
-alias dog = 'java -Xms1g -Xmx1g -Xmn384m -jar encryptdog-2.0.7.jar'
+$ wget https://github.com/gaoxianglong/encrypt-dog-new/releases/download/v2.0.8/encryptdog-2.0.8.jar
+alias dog = 'java -Xms1g -Xmx1g -Xmn384m -jar encryptdog-2.0.8.jar'
 ```
 #### build from source (also supported)
 ```shell
 git clone git@github.com:gaoxianglong/encrypt-dog-new.git
 mvn package
-alias dog = 'java -Xms1g -Xmx1g -Xmn384m -jar encryptdog-2.0.7.jar'
+alias dog = 'java -Xms1g -Xmx1g -Xmn384m -jar encryptdog-2.0.8.jar'
 ```
 ### gui mode
 EncryptDog's primary interface is a Swing graphical UI with a purple gradient theme. DMG users launch the app directly; jar users add `--gui` to the startup command (the remaining arguments prefill the form):
 ```shell
-$ java -Xms1g -Xmx1g -Xmn384m -jar encryptdog-2.0.7.jar --gui
+$ java -Xms1g -Xmx1g -Xmn384m -jar encryptdog-2.0.8.jar --gui
 # prefill source files and algorithm
-$ java -jar encryptdog-2.0.7.jar --gui -e -a AES -s /path/to/file1,/path/to/file2
+$ java -jar encryptdog-2.0.8.jar --gui -e -a AES -s /path/to/file1,/path/to/file2
 ```
 ### double-click .dog to decrypt (macOS App)
 DMG users can double-click a .dog file in Finder: the GUI opens directly with decrypt mode and the file list prefilled (the secret key is still entered by hand, nothing runs automatically). If the first double-click asks which app to open with, choose EncryptDog once. jar mode has no file association.
@@ -43,7 +43,7 @@ Welcome to
  / _// _ \/ __/ __/ // / _ \/ __/ // / _ \/ _ `/
 /___/_//_/\__/_/  \_, / .__/\__/____/\___/\_, / 
                  /___/_/                 /___/
-	version: 2.0.7
+	version: 2.0.8
 
 Usage: encryptdog [-dehoV] -k [-k]... [-a=<encryptAlgorithm>] [-t=<storage
                    path>] -s=<source file>[,<source file>...]... [-s=<source

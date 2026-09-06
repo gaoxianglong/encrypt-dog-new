@@ -104,6 +104,26 @@ public abstract class AbstractOperationTemplate implements OperationStrategy {
             // 加/解密操作的失败详情输出到日志目录
             actionLog(e, operationVO.isEncrypt(), sourceFilePath, operationVO.getSecretKey());
             try {
+                if (encryptContext == null) {
+                    // 打开源/目标文件失败(如文件在解析后消失):补建最小上下文走正常失败事件链,
+                    // 避免onFailure对null上下文空指针、避免该行卡在执行中且失败计数漏算
+                    encryptContext = new EncryptContext()
+                        // 设置执行结果数据上下文
+                        .setResultContext(context)
+                        // 设置加/解密领域模型
+                        .setOperationVO(operationVO)
+                        // 设置每次加/解密读取的文件内容大小
+                        .setDefaultCapacity(0)
+                        // 设置源文件容量
+                        .setSourceFileCapacity(sourceFileCapacity);
+                    // 记录原始失败原因,供执行列表失败图标悬停展示
+                    var viewState = context.getDashboardViewStates().get(sourceFilePath);
+                    if (Objects.nonNull(viewState)) {
+                        viewState.setErrorMsg(e.getMessage());
+                    }
+                    // 状态机不允许WAITING→FINISHED直接迁移,先迁RUNNING(该场景不下发事件)再走失败处理
+                    getProcessState().setState(encryptContext, EncryptStateEnum.RUNNING);
+                }
                 // 失败处理
                 onFailure(encryptContext);
             } catch (OperationException e1) {

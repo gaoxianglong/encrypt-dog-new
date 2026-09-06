@@ -271,7 +271,9 @@ public class ProgressPanel extends JPanel {
         for (var file : files) {
             rows.add(new RowData(no++, file, "-", "-", STATUS_WAITING, "-", "-", "", "-"));
         }
-        rebuildRows();
+        rebuildRows(false);
+        // 新操作不继承上一轮操作的滚动位置:重建后显式置顶
+        scrollPane.getViewport().setViewPosition(new Point(0, 0));
     }
 
     /**
@@ -324,7 +326,7 @@ public class ProgressPanel extends JPanel {
         statSuccess.setValue(String.valueOf(success));
         statFailed.setValue(String.valueOf(failed));
         statElapsed.setValue(Utils.currentTimeFormat(elapsedSeconds()));
-        rebuildRows();
+        rebuildRows(true);
     }
 
     /**
@@ -370,8 +372,9 @@ public class ProgressPanel extends JPanel {
         statFiles.setValue(String.valueOf(result.getTotalFiles()));
         statSuccess.setValue(String.valueOf(result.getSuccessCount()));
         statFailed.setValue(String.valueOf(result.getFailedCount()));
-        statElapsed.setValue(result.getTimeConsuming());
-        rebuildRows();
+        // 完成态沿用GUI计时起点(与refresh同一口径),core的timeConsuming起点晚于操作提交,覆盖会导致耗时数值回退
+        statElapsed.setValue(Utils.currentTimeFormat(elapsedSeconds()));
+        rebuildRows(true);
     }
 
     /**
@@ -455,8 +458,12 @@ public class ProgressPanel extends JPanel {
 
     /**
      * 重建表头与行视图
+     * @param restorePosition true=重建后恢复视口滚动位置(refresh/finish路径);
+     *                        false=不恢复(begin路径,新操作由调用方显式置顶)
      */
-    private void rebuildRows() {
+    private void rebuildRows(boolean restorePosition) {
+        // 重建会把JViewport视口位置重置为顶部:refresh/finish路径先保存,重建完成后恢复
+        var saved = restorePosition ? scrollPane.getViewport().getViewPosition() : null;
         int[] layout = columnLayout();
         // 表头
         headerPanel.removeAll();
@@ -471,10 +478,14 @@ public class ProgressPanel extends JPanel {
         }
         // 行
         rowsPanel.removeAll();
+        int contentW = getWidth() - PADDING * 2;
         int rowsHeight = rows.size() * (ROW_H + ROW_GAP) + 8;
-        rowsPanel.setBounds(0, 0, getWidth() - PADDING * 2, rowsHeight);
-        // null布局面板首选尺寸缺省为0,JScrollPane视口不会滚动,必须显式设置
-        rowsPanel.setPreferredSize(new java.awt.Dimension(getWidth() - PADDING * 2, rowsHeight));
+        // 尺寸未变时跳过对视图容器的setBounds/setPreferredSize:重复设置尺寸会触发视口位置重置
+        if (rowsPanel.getWidth() != contentW || rowsPanel.getHeight() != rowsHeight) {
+            rowsPanel.setBounds(0, 0, contentW, rowsHeight);
+            // null布局面板首选尺寸缺省为0,JScrollPane视口不会滚动,必须显式设置
+            rowsPanel.setPreferredSize(new java.awt.Dimension(contentW, rowsHeight));
+        }
         int y = 0;
         for (var data : rows) {
             rowsPanel.add(buildRow(data, layout, y));
@@ -482,6 +493,10 @@ public class ProgressPanel extends JPanel {
         }
         rowsPanel.revalidate();
         rowsPanel.repaint();
+        // 恢复保存的视口位置(必须在revalidate之后,提前恢复会被重建过程覆盖)
+        if (saved != null) {
+            scrollPane.getViewport().setViewPosition(saved);
+        }
     }
 
     /**
@@ -634,7 +649,7 @@ public class ProgressPanel extends JPanel {
         headerPanel.setBounds(PADDING, listY, w - PADDING * 2, HEADER_H);
         scrollPane.setBounds(PADDING, listY + HEADER_H + 4, w - PADDING * 2, h - listY - HEADER_H - 20);
         if (!rows.isEmpty()) {
-            rebuildRows();
+            rebuildRows(true);
         }
     }
 

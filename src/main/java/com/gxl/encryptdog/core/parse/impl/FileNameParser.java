@@ -79,7 +79,10 @@ public class FileNameParser implements Parser {
 
             // 判断是否是文件
             if (sourFile.isFile()) {
-                rlt.add(path);
+                // AppleDouble元数据伴生文件不进入操作列表(过滤防其制造parse/execute竞态与垃圾产物)
+                if (!isAppleDouble(sourFile)) {
+                    rlt.add(path);
+                }
                 continue;
             }
 
@@ -87,6 +90,15 @@ public class FileNameParser implements Parser {
             parseFiles(sourFile, rlt);
         }
         return rlt;
+    }
+
+    /**
+     * 是否是AppleDouble元数据伴生文件(macOS在非APFS卷上生成的._前缀隐藏文件)
+     * @param file 文件
+     * @return true=是,应忽略
+     */
+    private boolean isAppleDouble(File file) {
+        return file.getName().startsWith("._");
     }
 
     /**
@@ -110,6 +122,10 @@ public class FileNameParser implements Parser {
         for (var f : sourceFile.listFiles()) {
             if (f.isDirectory()) {
                 parseFiles(f, list);
+                continue;
+            }
+            // AppleDouble元数据伴生文件不进入操作列表
+            if (isAppleDouble(f)) {
                 continue;
             }
             list.add(f.getPath());

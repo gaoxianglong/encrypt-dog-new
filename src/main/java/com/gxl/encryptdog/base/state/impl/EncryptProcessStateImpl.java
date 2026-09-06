@@ -116,7 +116,9 @@ public class EncryptProcessStateImpl implements EncryptProcessState {
 
         // 获取目标文件路径
         var targetFilePath = context.getOperationVO().getTargetFilePath();
-        event.setTargetFileSize(Utils.capacityFormat(Utils.getFileCapacity(targetFilePath)));
+        // 目标文件不存在(如打开失败)时容量为-1,目标大小显示-而非-0.00MB
+        var targetCapacity = Utils.getFileCapacity(targetFilePath);
+        event.setTargetFileSize(targetCapacity < 0 ? "-" : Utils.capacityFormat(targetCapacity));
         return event;
     }
 }
